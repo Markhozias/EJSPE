@@ -394,6 +394,66 @@
             resultDiv.className = `result ${status}`;
         }
 
+        const C = 299792; // km/s
+
+    function toggleDilationInputs() {
+        const type = document.getElementById('dilationType').value;
+        document.getElementById('planetSurfaceInputs').style.display = 
+            type === 'planetSurface' ? 'block' : 'none';
+        document.getElementById('orbitalInputs').style.display = 
+            type === 'orbital' ? 'block' : 'none';
+    }
+
+    function calculateTime() {
+        const type = document.getElementById('dilationType').value;
+        const velocity = parseFloat(document.getElementById('relativeVelocity').value) || 0;
+        let gravitationalFactor = 1;
+
+        // Calculate gravitational time dilation
+        if(type === 'planetSurface') {
+            const g = parseFloat(document.getElementById('localGravity').value);
+            if(g) {
+                // Approximation for surface gravity: T = T0 * sqrt(1 - 2gh/c²)
+                const h = 2; // Average measurement height (m)
+                gravitationalFactor = Math.sqrt(1 - (2 * g * h)/(C*1000)**2);
+            }
+        } else {
+            const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
+            const r = parseFloat(document.getElementById('orbitalRadius').value) * 1000;
+            if(M && r) {
+                // Schwarzschild solution: T = T0 * sqrt(1 - 2GM/(rc²))
+                const G = 6.674e-11;
+                gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * (C*1000)**2));
+            }
+        }
+
+        // Calculate velocity time dilation
+        const velocityFactor = Math.sqrt(1 - (velocity**2)/(C**2));
+    
+        // Combine effects
+        const dilationFactor = 1 / (gravitationalFactor * velocityFactor);
+    
+        // Calculate proper time (example relationship)
+        const properTime = (dilationFactor - 1) * 1000; // Simplified model
+
+        // Update results
+        const resultDiv = document.getElementById('timeResult');
+        let status = "status-normal";
+        let message = `Time Dilation Factor: ${dilationFactor.toExponential(2)}<br>`;
+        message += `Proper Time: ${properTime.toFixed(6)} s`;
+
+        if(dilationFactor > 1.000001) {
+            status = "status-alert";
+            message += "<br>⚠️ EXTREME TIME DISTORTION";
+        } else if(!gravitationalFactor || !velocityFactor) {
+            status = "status-warning";
+            message = "⚠️ Missing data! Complete all fields";
+        }
+
+        resultDiv.innerHTML = message;
+        resultDiv.className = `result ${status}`;
+    }
+
         // Initialize folders as closed
         window.onload = function() {
             document.querySelectorAll('.folder-content').forEach(folder => {
