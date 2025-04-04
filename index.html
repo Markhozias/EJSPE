@@ -415,7 +415,7 @@
             if(g) {
                 // Approximation for surface gravity: T = T0 * sqrt(1 - 2gh/c²)
                 const h = 2; // Average measurement height (m)
-                gravitationalFactor = Math.sqrt(1 - (2 * g * h)/(C*1000)**2);
+                gravitationalFactor = Math.sqrt(1 - (2 * G * M) / (r * C**2));
             }
         } else {
             const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
@@ -439,7 +439,7 @@
         // Update results
         const resultDiv = document.getElementById('timeResult');
         let status = "status-normal";
-        let message = `Time Dilation Factor: ${dilationFactor.toExponential(2)}<br>`;
+        let message = `Time Dilation Factor: $dilationFactor.toExponential(8)}<br>`;
         message += `Proper Time: ${properTime.toFixed(6)} s`;
 
         if(dilationFactor > 1.000001) {
