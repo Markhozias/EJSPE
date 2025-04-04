@@ -168,26 +168,48 @@
             <h3>Time Warp Chronometer</h3>
             <div class="schematic">
                 [ATOMIC CLOCK]══▶[WARP FIELD]══▶[COMPARATOR]
-                     │               ▲
-                     ▼               │
-                [GPS SYNC]◀══[DISPLAY]
+                         │               ▲
+                         ▼               │
+                    [GPS SYNC]◀══[DISPLAY]
             </div>
+
             <div class="step">
-                <strong>Step 1:</strong> Enter planetary rotation speed<br>
-                <input type="number" id="rotationSpeed" value="1670" min="0"> km/h
+                <strong>Step 1:</strong> Select measurement type<br>
+                <select id="dilationType" onchange="toggleDilationInputs()">
+                    <option value="planetSurface">Planetary Surface</option>
+                    <option value="orbital">Orbital Measurement</option>
+                </select>
             </div>
+
+            <!-- Planetary Surface Inputs -->
+            <div class="step" id="planetSurfaceInputs">
+                <strong>Step 2a:</strong> Local gravity<br>
+                <input type="number" id="localGravity" value="9.81" min="0" step="0.1"> m/s²
+            </div>
+
+            <!-- Orbital Inputs -->
+            <div class="step" id="orbitalInputs" style="display:none;">
+                <strong>Step 2b:</strong> Central body mass<br>
+                <input type="number" id="centralMass" value="5.97" step="0.01"> ×10²⁴ kg<br>
+                <strong>Step 2c:</strong> Orbital radius<br>
+                <input type="number" id="orbitalRadius" value="6371" step="10"> km
+            </div>
+
             <div class="step">
-                <strong>Step 2:</strong> Local time dilation factor<br>
-                <input type="number" id="dilationFactor" value="1.000001" min="1" step="0.000001">
+                <strong>Step 3:</strong> Relative velocity<br>
+                <input type="number" id="relativeVelocity" value="0" min="0" step="100"> km/s
             </div>
+
             <div class="calculator">
-                <button onclick="calculateTime()">Calculate Time Effect</button>
+                <button onclick="calculateTime()">Calculate Time Effects</button>
                 <div class="result" id="timeResult">
+                    Time Dilation Factor: --<br>
                     Proper Time: -- s
                 </div>
                 <div class="explanation">
-                    Faster rotation = more time distortion<br>
-                    Higher dilation = more CTC stability needed
+                    Higher gravity/velocity = more time dilation<br>
+                    Earth surface dilation: ~1.0000000007<br>
+                    GPS satellite dilation: ~1.0000000004
                 </div>
             </div>
         </div>
