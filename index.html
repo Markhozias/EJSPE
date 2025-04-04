@@ -1,106 +1,363 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Echo Drive Calculator</title>
+    <title>CTC Quantum Drive Field Kit</title>
     <style>
-        .calculator {
-            padding: 20px;
-            background: #1a1a1a;
-            color: #00ff9d;
-            font-family: monospace;
-            max-width: 600px;
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0f0f23;
+            color: #00ff00;
+            max-width: 900px;
             margin: 0 auto;
+            padding: 20px;
         }
-        input[type="number"] {
-            background: #000;
-            color: #0f0;
-            border: 1px solid #0f0;
+        .calculator {
+            border: 1px solid #00ff00;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #001100;
+        }
+        h1, h2, h3 {
+            color: #00cc00;
+            border-bottom: 1px solid #005500;
+        }
+        label {
+            display: inline-block;
+            width: 250px;
+            margin: 10px 0;
+        }
+        input[type="number"], input[type="text"] {
+            background-color: #001100;
+            color: #00ff00;
+            border: 1px solid #00aa00;
             padding: 5px;
+            width: 100px;
         }
         .result {
-            font-size: 1.2em;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #002200;
+            border: 1px solid #007700;
+        }
+        .explanation {
+            font-size: 0.9em;
+            color: #00aa00;
+            margin-top: 5px;
+        }
+        .folder {
+            margin: 15px 0;
+            border: 1px solid #007700;
+            padding: 10px;
+        }
+        .folder-header {
+            cursor: pointer;
+            padding: 10px;
+            background-color: #002200;
+            font-weight: bold;
+        }
+        .folder-content {
+            display: none;
+            padding: 10px;
+            border-top: 1px dashed #005500;
+        }
+        .schematic {
             margin: 15px 0;
             padding: 10px;
-            background: #002;
+            background-color: #000;
+            text-align: center;
+            font-family: monospace;
+            white-space: pre;
+        }
+        .step {
+            margin: 10px 0;
+            padding-left: 20px;
+            border-left: 2px solid #007700;
         }
     </style>
 </head>
 <body>
+    <h1>CTC Quantum Drive Field Kit</h1>
+    
     <div class="calculator">
-        <h2>Echo Drive Success Calculator</h2>
-        
+    <div class="calculator">
         <div>
-            <label>Initial Success Probability (%): </label>
-            <input type="number" id="initialSuccess" min="0" max="100" value="90">
+            <label for="exoticMass">Exotic Matter Mass (kg):</label>
+            <input type="number" id="exoticMass" min="0" step="0.001" value="1.0">
+            <div class="explanation">Negative energy density required to stabilize CTC (≥1kg for human-scale effects)</div>
         </div>
         
         <div>
-            <label>Time Evolution Success (%): </label>
-            <input type="number" id="timeEvolution" min="0" max="100" value="95">
+            <label for="properTime">Proper Time Duration (s):</label>
+            <input type="number" id="properTime" min="0" step="0.001" value="1.0">
+            <div class="explanation">Subjective time spent in the CTC (shorter = more stable)</div>
         </div>
         
         <div>
-            <label>Debt-Free Paths (%): </label>
-            <input type="number" id="debtFree" min="0" max="100" value="70">
+            <label for="entropy">System Entropy (nat):</label>
+            <input type="number" id="entropy" min="0" step="0.1" value="5.0">
+            <div class="explanation">Quantum disorder of the system (lower = more coherent)</div>
         </div>
         
         <div>
-            <label>Ship Mass (kg): </label>
-            <input type="number" id="shipMass" value="1000">
+            <label for="topology">Spacetime Topology Factor:</label>
+            <input type="number" id="topology" min="0.01" step="0.01" value="0.5">
+            <div class="explanation">How "twisted" the local spacetime is (0.1-1.0 range)</div>
         </div>
         
-        <div>
-            <label>Number of Jumps: </label>
-            <input type="number" id="numJumps" value="3">
+        <div class="result" id="results">
+            <h3>Quantum CTC Analysis:</h3>
+            <div id="calculationResults">Enter parameters to calculate</div>
         </div>
-
-        <div class="result" id="results"></div>
     </div>
 
     <script>
+        // Constants
+        const PLANCK_MASS = 2.176434e-8; // kg
+        const PLANCK_TIME = 5.391247e-44; // s
+        const BOLTZMANN = 1.380649e-23; // J/K
+        
         function calculate() {
-            // Get input values
-            const initialSuccess = document.getElementById('initialSuccess').value / 100;
-            const timeEvolution = document.getElementById('timeEvolution').value / 100;
-            const debtFree = document.getElementById('debtFree').value / 100;
-            const shipMass = parseFloat(document.getElementById('shipMass').value);
-            const numJumps = parseInt(document.getElementById('numJumps').value);
-
-            // Calculate success probability
-            const numerator = timeEvolution * Math.sqrt(initialSuccess);
-            const denominator = Math.sqrt(debtFree);
-            let rawProbability = numerator / denominator;
+            // Get inputs
+            const exoticMass = Math.abs(parseFloat(document.getElementById('exoticMass').value));
+            const properTime = parseFloat(document.getElementById('properTime').value);
+            const entropy = parseFloat(document.getElementById('entropy').value);
+            const topology = parseFloat(document.getElementById('topology').value);
             
-            // Calculate leakage (graveyard contribution)
-            const leakage = Math.max(0, rawProbability - 1);
-            const finalProbability = Math.min(1, rawProbability);
+            // Quantum stability calculation (Deutsch model)
+            const planckRatio = (exoticMass / PLANCK_MASS) * (properTime / PLANCK_TIME);
+            const coherenceFactor = Math.exp(-entropy) * topology;
             
-            // Calculate graveyard mass
-            let graveyardMass = 0;
-            const τ = 2; // Time constant
-            for(let n = 1; n <= numJumps; n++) {
-                graveyardMass += leakage * shipMass * Math.exp(-n/τ);
-            }
-
+            // Probability of self-consistent loop (Deutsch 1991)
+            const consistencyProbability = Math.tanh(planckRatio * coherenceFactor);
+            
+            // Energy requirements (negative energy density)
+            const energyDensity = -((exoticMass * Math.pow(3e8, 2)) / (topology * properTime);
+            
+            // Decoherence artifacts (information retention)
+            const decoherenceArtifacts = (1 - consistencyProbability) * entropy * 1e-23; // kg
+            
             // Display results
             const results = `
-                RAW PROBABILITY: ${(rawProbability * 100).toFixed(1)}%<br>
-                FINAL SUCCESS: ${(finalProbability * 100).toFixed(1)}%<br>
-                TIMELINE LEAKAGE: ${(leakage * 100).toFixed(1)}%<br>
-                GRAVEYARD MASS: ${graveyardMass.toFixed(1)} kg<br>
-                (After ${numJumps} jumps)
-            `;
+                <p><strong>Self-Consistency Probability:</strong> ${(consistencyProbability * 100).toFixed(6)}%</p>
+                <p><strong>Required Negative Energy Density:</strong> ${energyDensity.toExponential(3)} J/m³</p>
+                <p><strong>Quantum Decoherence Artifacts:</strong> ${decoherenceArtifacts.toExponential(3)} kg</p>
+                <p><strong>Planck-Scale Ratio:</strong> ${planckRatio.toExponential(3)}</p>
+                <p><strong>Coherence Factor:</strong> ${coherenceFactor.toExponential(3)}</p>
+                
+                <div class="explanation">
+                    <p>Based on Deutsch's CTC model (PRD 44, 1991) with:</p>
+                    <ul>
+                        <li>Self-consistency enforced via post-selection</li>
+                        <li>Negative energy requirement from quantum inequalities</li>
+                        <li>Decoherence artifacts represent information loss to the environment</li>
+                    </ul>
+    </div>
+
+    <!-- Exotic Matter Mass Folder -->
+    <div class="folder">
+        <div class="folder-header" onclick="toggleFolder('exoticFolder')">
+            [+] Exotic Matter Mass Measurement
+        </div>
+        <div class="folder-content" id="exoticFolder">
+            <h3>Vacuum Energy Scanner</h3>
             
-            document.getElementById('results').innerHTML = results;
+            <div class="schematic">
+                [LASER]══▶[CASIMIR CAVITY]══▶[DETECTOR]
+                          ▲             │
+                          │             ▼
+                    [QUANTUM PUMP]◀══[ANALYZER]
+            </div>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Point at planet's atmosphere<br>
+                <input type="text" id="planetName1" placeholder="Planet Name" value="Earth">
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Enter local air pressure (kPa)<br>
+                <input type="number" id="airPressure" value="101.3" min="0" step="0.1"> kPa
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Set gravity compensation<br>
+                <input type="number" id="localGravity1" value="9.81" min="0" step="0.1"> m/s²
+            </div>
+            
+            <div class="calculator">
+                <button onclick="calculateExotic()">Calculate Exotic Mass</button>
+                <div class="result" id="exoticResult">
+                    Exotic Mass: -- kg
+                </div>
+                <div class="explanation">
+                    Higher air pressure = easier to detect exotic particles<br>
+                    Lower gravity = more sensitive measurements
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proper Time Duration Folder -->
+    <div class="folder">
+        <div class="folder-header" onclick="toggleFolder('timeFolder')">
+            [+] Proper Time Measurement
+        </div>
+        <div class="folder-content" id="timeFolder">
+            <h3>Time Warp Chronometer</h3>
+            
+            <div class="schematic">
+                [ATOMIC CLOCK]══▶[WARP FIELD]══▶[COMPARATOR]
+                     │               ▲
+                     ▼               │
+                [GPS SYNC]◀══[DISPLAY]
+            </div>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Enter planetary rotation speed<br>
+                <input type="number" id="rotationSpeed" value="1670" min="0"> km/h
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Local time dilation factor<br>
+                <input type="number" id="dilationFactor" value="1.000001" min="1" step="0.000001">
+            </div>
+            
+            <div class="calculator">
+                <button onclick="calculateTime()">Calculate Time Effect</button>
+                <div class="result" id="timeResult">
+                    Proper Time: -- s
+                </div>
+                <div class="explanation">
+                    Faster rotation = more time distortion<br>
+                    Higher dilation = more CTC stability needed
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Entropy Folder -->
+    <div class="folder">
+        <div class="folder-header" onclick="toggleFolder('entropyFolder')">
+            [+] Quantum Entropy Measurement
+        </div>
+        <div class="folder-content" id="entropyFolder">
+            <h3>Decoherence Detector</h3>
+            
+            <div class="schematic">
+                [QUBIT]══▶[COIL]══▶[READER]
+                   ▲         │
+                   │         ▼
+                [COOLER]◀═[DISPLAY]
+            </div>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Ambient temperature<br>
+                <input type="number" id="ambientTemp" value="293" min="0"> K
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Magnetic field strength<br>
+                <input type="number" id="magneticField" value="1.0" min="0" step="0.1"> Tesla
+            </div>
+            
+            <div class="calculator">
+                <button onclick="calculateEntropy()">Calculate Entropy</button>
+                <div class="result" id="entropyResult">
+                    System Entropy: -- nat
+                </div>
+                <div class="explanation">
+                    Higher temperature = more quantum noise<br>
+                    Stronger magnetic fields = better coherence
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spacetime Topology Folder -->
+    <div class="folder">
+        <div class="folder-header" onclick="toggleFolder('topologyFolder')">
+            [+] Spacetime Curvature Measurement
+        </div>
+        <div class="folder-content" id="topologyFolder">
+            <h3>Gravity Warp Scanner</h3>
+            
+            <div class="schematic">
+                [LASER GRID]══▶[DETECTOR ARRAY]
+                     ▲              │
+                     │              ▼
+                [PULSAR REF]◀═[ANALYZER]
+            </div>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Planetary mass<br>
+                <input type="number" id="planetMass" value="5.97" min="0" step="0.01"> ×10²⁴ kg
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Core density<br>
+                <input type="number" id="coreDensity" value="12" min="0" step="0.1"> g/cm³
+            </div>
+            
+            <div class="calculator">
+                <button onclick="calculateTopology()">Calculate Curvature</button>
+                <div class="result" id="topologyResult">
+                    Topology Factor: --
+                </div>
+                <div class="explanation">
+                    More massive planets = more spacetime bending<br>
+                    Denser cores = stronger local curvature effects
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle folder visibility
+        function toggleFolder(id) {
+            const folder = document.getElementById(id);
+            const header = folder.previousElementSibling;
+            if (folder.style.display === 'block') {
+                folder.style.display = 'none';
+                header.innerHTML = header.innerHTML.replace('−', '+');
+            } else {
+                folder.style.display = 'block';
+                header.innerHTML = header.innerHTML.replace('+', '−');
+            }
         }
 
-        // Update results on any input change
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', calculate);
-        });
+        // Simplified calculators for each device
+        function calculateExotic() {
+            const pressure = parseFloat(document.getElementById('airPressure').value);
+            const gravity = parseFloat(document.getElementById('localGravity1').value);
+            const exoticMass = (pressure / 101.3) * (9.81 / gravity) * 1.5;
+            document.getElementById('exoticResult').innerHTML = 
+                `Exotic Mass: ${exoticMass.toFixed(3)} kg`;
+        }
 
-        // Initial calculation
-        calculate();
+        function calculateTime() {
+            const speed = parseFloat(document.getElementById('rotationSpeed').value);
+            const dilation = parseFloat(document.getElementById('dilationFactor').value);
+            const properTime = (speed / 1670) * (dilation - 1) * 1000;
+            document.getElementById('timeResult').innerHTML = 
+                `Proper Time: ${properTime.toFixed(6)} s`;
+        }
+
+        function calculateEntropy() {
+            const temp = parseFloat(document.getElementById('ambientTemp').value);
+            const field = parseFloat(document.getElementById('magneticField').value);
+            const entropy = Math.log(temp / 293) * (1 / field);
+            document.getElementById('entropyResult').innerHTML = 
+                `System Entropy: ${entropy.toFixed(2)} nat`;
+        }
+
+        function calculateTopology() {
+            const mass = parseFloat(document.getElementById('planetMass').value);
+            const density = parseFloat(document.getElementById('coreDensity').value);
+            const topology = (mass / 5.97) * (density / 12) * 0.5;
+            document.getElementById('topologyResult').innerHTML = 
+                `Topology Factor: ${topology.toFixed(3)}`;
+        }
+
+        // Initialize folders as closed
+        window.onload = function() {
+            document.querySelectorAll('.folder-content').forEach(folder => {
+                folder.style.display = 'none';
+            });
+        };
     </script>
 </body>
 </html>
