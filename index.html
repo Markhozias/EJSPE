@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Echo Drive Calculator</title>
+    <style>
+        .calculator {
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff9d;
+            font-family: monospace;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input[type="number"] {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 5px;
+        }
+        .result {
+            font-size: 1.2em;
+            margin: 15px 0;
+            padding: 10px;
+            background: #002;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h2>Echo Drive Success Calculator</h2>
+        
+        <div>
+            <label>Initial Success Probability (%): </label>
+            <input type="number" id="initialSuccess" min="0" max="100" value="90">
+        </div>
+        
+        <div>
+            <label>Time Evolution Success (%): </label>
+            <input type="number" id="timeEvolution" min="0" max="100" value="95">
+        </div>
+        
+        <div>
+            <label>Debt-Free Paths (%): </label>
+            <input type="number" id="debtFree" min="0" max="100" value="70">
+        </div>
+        
+        <div>
+            <label>Ship Mass (kg): </label>
+            <input type="number" id="shipMass" value="1000">
+        </div>
+        
+        <div>
+            <label>Number of Jumps: </label>
+            <input type="number" id="numJumps" value="3">
+        </div>
+
+        <div class="result" id="results"></div>
+    </div>
+
+    <script>
+        function calculate() {
+            // Get input values
+            const initialSuccess = document.getElementById('initialSuccess').value / 100;
+            const timeEvolution = document.getElementById('timeEvolution').value / 100;
+            const debtFree = document.getElementById('debtFree').value / 100;
+            const shipMass = parseFloat(document.getElementById('shipMass').value);
+            const numJumps = parseInt(document.getElementById('numJumps').value);
+
+            // Calculate success probability
+            const numerator = timeEvolution * Math.sqrt(initialSuccess);
+            const denominator = Math.sqrt(debtFree);
+            let rawProbability = numerator / denominator;
+            
+            // Calculate leakage (graveyard contribution)
+            const leakage = Math.max(0, rawProbability - 1);
+            const finalProbability = Math.min(1, rawProbability);
+            
+            // Calculate graveyard mass
+            let graveyardMass = 0;
+            const τ = 2; // Time constant
+            for(let n = 1; n <= numJumps; n++) {
+                graveyardMass += leakage * shipMass * Math.exp(-n/τ);
+            }
+
+            // Display results
+            const results = `
+                RAW PROBABILITY: ${(rawProbability * 100).toFixed(1)}%<br>
+                FINAL SUCCESS: ${(finalProbability * 100).toFixed(1)}%<br>
+                TIMELINE LEAKAGE: ${(leakage * 100).toFixed(1)}%<br>
+                GRAVEYARD MASS: ${graveyardMass.toFixed(1)} kg<br>
+                (After ${numJumps} jumps)
+            `;
+            
+            document.getElementById('results').innerHTML = results;
+        }
+
+        // Update results on any input change
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Initial calculation
+        calculate();
+    </script>
+</body>
+</html>
