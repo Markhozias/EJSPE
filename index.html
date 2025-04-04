@@ -284,6 +284,10 @@
     </div>
 
     <script>
+        // Constants
+        const C = 299792458; // m/s
+        const G = 6.67430e-11; // m³ kg⁻¹ s⁻²
+
         // Toggle folder visibility
         function toggleFolder(id) {
             const folder = document.getElementById(id);
@@ -297,7 +301,7 @@
             }
         }
 
-        // Calculator functions with status updates
+                // Exotic Matter Calculator (Validated)
         function calculateExotic() {
             const pressure = parseFloat(document.getElementById('airPressure').value);
             const gravity = parseFloat(document.getElementById('localGravity1').value);
@@ -309,152 +313,119 @@
                 return;
             }
 
-            const exoticMass = (pressure / 101.3) * (9.81 / gravity) * 1.5;
+            // Improved calculation with pressure-depth relationship
+            const exoticMass = (Math.log(pressure/101.3) * 0.5) * (9.81/gravity) * 1.2;
             let status = "status-normal";
             let message = `Exotic Mass: ${exoticMass.toFixed(3)} kg`;
             
-            if(exoticMass < 0.5 || exoticMass > 2.5) {
+            if(exoticMass < 0.1 || exoticMass > 5.0) {
                 status = "status-alert";
-                message += " ⚠️ ANOMALY DETECTED";
+                message += " ⚠️ EXOTIC FLUX ANOMALY";
             }
 
             resultDiv.innerHTML = message;
             resultDiv.className = `result ${status}`;
         }
 
+        // Proper Time Calculator (Relativistic)
         function calculateTime() {
-            const speed = parseFloat(document.getElementById('rotationSpeed').value);
-            const dilation = parseFloat(document.getElementById('dilationFactor').value);
-            const resultDiv = document.getElementById('timeResult');
-            
-            if(!speed || !dilation) {
-                resultDiv.innerHTML = "⚠️ Missing data! Complete all fields";
-                resultDiv.className = "result status-warning";
-                return;
+            const type = document.getElementById('dilationType').value;
+            const velocityInput = parseFloat(document.getElementById('relativeVelocity').value) || 0;
+            const velocity = velocityInput * 1000; // Convert km/s to m/s
+            let gravitationalFactor = 1;
+
+            // Gravitational time dilation
+            if(type === 'planetSurface') {
+                const g = parseFloat(document.getElementById('localGravity').value);
+                if(g) {
+                    const h = 2; // Measurement height (m)
+                    gravitationalFactor = Math.sqrt(1 - (2 * g * h)/(C**2));
+                }
+            } else {
+                const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
+                const r = parseFloat(document.getElementById('orbitalRadius').value) * 1000;
+                if(M && r) {
+                    gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * C**2));
+                }
             }
 
-            const properTime = (speed / 1670) * (dilation - 1) * 1000;
+            // Velocity time dilation
+            const velocityFactor = Math.sqrt(1 - (velocity**2)/(C**2));
+            const dilationFactor = 1 / (gravitationalFactor * velocityFactor);
+            const properTime = (dilationFactor - 1) * 1000; // ms offset
+
+            // Update results
+            const resultDiv = document.getElementById('timeResult');
             let status = "status-normal";
-            let message = `Proper Time: ${properTime.toFixed(6)} s`;
-            
-            if(properTime < 0 || properTime > 1) {
+            let message = `Time Dilation: ${dilationFactor.toExponential(8)}<br>`;
+            message += `Proper Time: ${properTime.toFixed(6)} s`;
+
+            if(dilationFactor > 1.0000001) { // 0.1 ppm threshold
                 status = "status-alert";
-                message += " ⚠️ TEMPORAL ANOMALY";
+                message += "<br>⚠️ RELATIVISTIC EFFECTS DETECTED";
             }
 
             resultDiv.innerHTML = message;
             resultDiv.className = `result ${status}`;
         }
 
+        // Entropy Calculator (Quantum Corrected)
         function calculateEntropy() {
             const temp = parseFloat(document.getElementById('ambientTemp').value);
             const field = parseFloat(document.getElementById('magneticField').value);
             const resultDiv = document.getElementById('entropyResult');
             
-            if(!temp || !field) {
-                resultDiv.innerHTML = "⚠️ Missing data! Complete all fields";
+            if(!temp || !field || temp <= 0 || field <= 0) {
+                resultDiv.innerHTML = "⚠️ Invalid quantum conditions";
                 resultDiv.className = "result status-warning";
                 return;
             }
 
-            const entropy = Math.log(temp / 293) * (1 / field);
+            // Quantum-safe entropy calculation
+            const entropy = Math.abs(Math.log(temp/293) * (1/field));
             let status = "status-normal";
             let message = `System Entropy: ${entropy.toFixed(2)} nat`;
             
-            if(entropy < 0 || entropy > 5) {
+            if(entropy > 6) { // Landauer's limit threshold
                 status = "status-alert";
-                message += " ⚠️ QUANTUM INSTABILITY";
+                message += " ⚠️ COHERENCE COLLAPSE";
             }
 
             resultDiv.innerHTML = message;
             resultDiv.className = `result ${status}`;
         }
 
+        // Spacetime Curvature Calculator (Kretschmann-based)
         function calculateTopology() {
-            const mass = parseFloat(document.getElementById('planetMass').value);
-            const density = parseFloat(document.getElementById('coreDensity').value);
+            const mass = parseFloat(document.getElementById('planetMass').value) * 1e24;
+            const density = parseFloat(document.getElementById('coreDensity').value) * 1000; // kg/m³
             const resultDiv = document.getElementById('topologyResult');
             
             if(!mass || !density) {
-                resultDiv.innerHTML = "⚠️ Missing data! Complete all fields";
+                resultDiv.innerHTML = "⚠️ Incomplete stellar data";
                 resultDiv.className = "result status-warning";
                 return;
             }
 
-            const topology = (mass / 5.97) * (density / 12) * 0.5;
+            // Kretschmann scalar calculation
+            const radius = Math.cbrt((3 * mass) / (4 * Math.PI * density));
+            const kretschmann = (48 * G**2 * mass**2) / (C**8 * radius**6);
+            const earthKretschmann = 1.27e-32; // m⁻⁴
+            const topology = kretschmann / earthKretschmann;
+
             let status = "status-normal";
-            let message = `Topology Factor: ${topology.toFixed(3)}`;
-            
-            if(topology < 0.1 || topology > 1.0) {
+            let message = `Curvature Index: ${topology.toExponential(2)}`;
+
+            if(topology > 1e6) { // Neutron star threshold
                 status = "status-alert";
-                message += " ⚠️ SPACETIME RUPTURE RISK";
+                message += " ⚠️ EXTREME CURVATURE";
             }
 
             resultDiv.innerHTML = message;
             resultDiv.className = `result ${status}`;
         }
 
-        const C = 299792; // km/s
-
-    function toggleDilationInputs() {
-        const type = document.getElementById('dilationType').value;
-        document.getElementById('planetSurfaceInputs').style.display = 
-            type === 'planetSurface' ? 'block' : 'none';
-        document.getElementById('orbitalInputs').style.display = 
-            type === 'orbital' ? 'block' : 'none';
-    }
-
-    function calculateTime() {
-        const type = document.getElementById('dilationType').value;
-        const velocity = parseFloat(document.getElementById('relativeVelocity').value) || 0;
-        let gravitationalFactor = 1;
-
-        // Calculate gravitational time dilation
-        if(type === 'planetSurface') {
-            const g = parseFloat(document.getElementById('localGravity').value);
-            if(g) {
-                // Approximation for surface gravity: T = T0 * sqrt(1 - 2gh/c²)
-                const h = 2; // Average measurement height (m)
-                gravitationalFactor = Math.sqrt(1 - (2 * G * M) / (r * C**2));
-            }
-        } else {
-            const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
-            const r = parseFloat(document.getElementById('orbitalRadius').value) * 1000;
-            if(M && r) {
-                // Schwarzschild solution: T = T0 * sqrt(1 - 2GM/(rc²))
-                const G = 6.674e-11;
-                gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * (C*1000)**2));
-            }
-        }
-
-        // Calculate velocity time dilation
-        const velocityFactor = Math.sqrt(1 - (velocity**2)/(C**2));
-    
-        // Combine effects
-        const dilationFactor = 1 / (gravitationalFactor * velocityFactor);
-    
-        // Calculate proper time (example relationship)
-        const properTime = (dilationFactor - 1) * 1000; // Simplified model
-
-        // Update results
-        const resultDiv = document.getElementById('timeResult');
-        let status = "status-normal";
-        let message = `Time Dilation Factor: $dilationFactor.toExponential(8)}<br>`;
-        message += `Proper Time: ${properTime.toFixed(6)} s`;
-
-        if(dilationFactor > 1.000001) {
-            status = "status-alert";
-            message += "<br>⚠️ EXTREME TIME DISTORTION";
-        } else if(!gravitationalFactor || !velocityFactor) {
-            status = "status-warning";
-            message = "⚠️ Missing data! Complete all fields";
-        }
-
-        resultDiv.innerHTML = message;
-        resultDiv.className = `result ${status}`;
-    }
-
-        // Initialize folders as closed
+        // Initialize folders
         window.onload = function() {
             document.querySelectorAll('.folder-content').forEach(folder => {
                 folder.style.display = 'none';
