@@ -184,8 +184,8 @@
 
             <!-- Planetary Surface Inputs -->
             <div class="step" id="planetSurfaceInputs">
-                <strong>Step 2a:</strong> Local gravity<br>
-                <input type="number" id="localGravity" value="9.81" min="0" step="0.1"> m/s²
+                <strong>Step 2a:</strong> Measurement altitude<br>
+                <input type="number" id="altitude" value="2" min="0"> meters
             </div>
 
             <!-- Orbital Inputs -->
@@ -289,6 +289,8 @@
         const C = 299792458; // m/s
         const G = 6.67430e-11; // m³ kg⁻¹ s⁻²
         const PLANCK_CURVATURE = 1.6e62; // m⁻⁴
+        const ħ = 1.0545718e-34;      // Reduced Planck constant
+        const k_B = 1.380649e-23;     // Boltzmann constant
 
         // Toggle folder visibility
         function toggleFolder(id) {
@@ -310,6 +312,8 @@
             const τ = parseFloat(document.getElementById('properTime').value);
             const S = parseFloat(document.getElementById('entropy').value);
             const K = parseFloat(document.getElementById('topology').value);
+            const τ_quantum = ħ / (Math.abs(ρ_exotic) * V * C**2); // Added missing ħ
+            const τ_ratio = τ / τ_quantum;
 
             // 1. Exotic Matter Validation (Negative Energy Density)
             const V = 1; // m³ (standardized CTC volume)
@@ -318,12 +322,12 @@
             // 3. Normalized Curvature Factor
             const K_normalized = K / PLANCK_CURVATURE;
 
-            // 4. Stability Probability Formula (Dimensionless)
+            // Corrected stability formula
             const stability = Math.exp(
-            -0.5 * (2.0 / M) -  // Exotic matter term (2kg baseline)
-            -0.3 * τ_ratio -     // Temporal stability
-            -0.4 * S +           // Entropy penalty
-            0.2 * K_normalized   // Curvature enhancement
+                - (1.0 / Math.max(M, 0.001)) - 
+                (τ_ratio * 1e-33) -  // Scale down temporal term
+                (S / 6.0) + 
+                (K_normalized * 1e62) // Scale up curvature
             );
 
             let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
@@ -409,8 +413,9 @@
             const T = parseFloat(document.getElementById('ambientTemp').value);
             const B = parseFloat(document.getElementById('magneticField').value);
     
-            // Landauer's Principle with quantum correction
-            const S = Math.abs(Math.log(T/293) * (1/B)) + (T > 1000 ? Math.log(T/1000) : 0);
+            // Quantum oscillator entropy
+            const ω = (B * ħ) / (2 * k_B * T);
+            const S = ω / (Math.exp(ω) - 1) - Math.log(1 - Math.exp(-ω));
     
             document.getElementById('entropyResult').innerHTML = 
                 `System Entropy: ${S.toFixed(3)} nat`;
@@ -427,9 +432,10 @@
             // Normalize to 0-1 scale
             const topology = (K - 1e-50)/(1e-40 - 1e-50);
     
-            document.getElementById('topologyResult').innerHTML = 
-                `Normalized Curvature: ${topology.toFixed(3)}`;
-        }
+    document.getElementById('topologyResult').innerHTML = 
+        `Curvature Ratio: ${K_ratio.toExponential(3)}<br>
+         Status: ${K_ratio > 1e-40 ? "🟢 Nominal" : "🔴 Insufficient"}`;
+}
 
         // Initialize folders
         window.onload = function() {
