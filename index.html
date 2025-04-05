@@ -117,6 +117,7 @@
         
         <div class="result" id="results">
             <h3>Quantum CTC Analysis:</h3>
+            <button onclick="calculateStability()" style="margin-top: 20px; padding: 10px;">Calculate Chronostability</button>
             <div id="calculationResults">Enter parameters to calculate</div>
         </div>
     </div>
@@ -287,6 +288,7 @@
         // Constants
         const C = 299792458; // m/s
         const G = 6.67430e-11; // m³ kg⁻¹ s⁻²
+        const PLANCK_CURVATURE = 1.6e62; // m⁻⁴
 
         // Toggle folder visibility
         function toggleFolder(id) {
@@ -300,6 +302,55 @@
                 header.innerHTML = header.innerHTML.replace('+', '−');
             }
         }
+
+        // Revised Core Calculations
+        function calculateStability() {
+            // Main parameters
+            const M = parseFloat(document.getElementById('exoticMass').value);
+            const τ = parseFloat(document.getElementById('properTime').value);
+            const S = parseFloat(document.getElementById('entropy').value);
+            const K = parseFloat(document.getElementById('topology').value);
+
+            // 1. Exotic Matter Validation (Negative Energy Density)
+            const V = 1; // m³ (standardized CTC volume)
+            const ρ_exotic = -M * C**2 / V; // Negative energy density
+
+            // 3. Normalized Curvature Factor
+            const K_normalized = K / PLANCK_CURVATURE;
+
+            // 4. Stability Probability Formula (Dimensionless)
+            const stability = Math.exp(
+            -0.5 * (2.0 / M) -  // Exotic matter term (2kg baseline)
+            -0.3 * τ_ratio -     // Temporal stability
+            -0.4 * S +           // Entropy penalty
+            0.2 * K_normalized   // Curvature enhancement
+            );
+
+            let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
+            let status = "status-normal";
+
+            if(M < 1.0) {
+                message += "⚠️ EXOTIC MASS INSUFFICIENT (Min 1kg)<br>";
+                status = "status-alert";
+            }
+            if(K < 0.1 || K > 1.0) {
+                message += "⚠️ TOPOLOGY OUT OF RANGE (0.1-1.0 required)<br>";
+                status = "status-alert";
+            }
+            if(S > 6.0) {
+                message += "⚠️ QUANTUM DECOHERENCE DETECTED<br>";
+                status = "status-alert";
+            }
+
+
+            document.getElementById("calculationResults").innerHTML = message;
+            document.getElementById("results").className = `result ${status}`;
+        }
+
+
+            // 2. Proper Time Relativistic Correction
+            const τ_critical = 1e-22; // Quantum timescale baseline
+            const τ_ratio = τ / τ_critical;
 
                 // Exotic Matter Calculator (Validated)
         function calculateExotic() {
@@ -327,102 +378,57 @@
             resultDiv.className = `result ${status}`;
         }
 
-        // Proper Time Calculator (Relativistic)
         function calculateTime() {
             const type = document.getElementById('dilationType').value;
-            const velocityInput = parseFloat(document.getElementById('relativeVelocity').value) || 0;
-            const velocity = velocityInput * 1000; // Convert km/s to m/s
             let gravitationalFactor = 1;
-
-            // Gravitational time dilation
+    
             if(type === 'planetSurface') {
                 const g = parseFloat(document.getElementById('localGravity').value);
-                if(g) {
-                    const h = 2; // Measurement height (m)
-                    gravitationalFactor = Math.sqrt(1 - (2 * g * h)/(C**2));
-                }
+                const h = 2; // Measurement height (m)
+                gravitationalFactor = Math.sqrt(1 - (2 * g * h)/C**2);
             } else {
                 const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
                 const r = parseFloat(document.getElementById('orbitalRadius').value) * 1000;
-                if(M && r) {
-                    gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * C**2));
-                }
+                gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * C**2));
             }
 
-            // Velocity time dilation
-            const velocityFactor = Math.sqrt(1 - (velocity**2)/(C**2));
+            const velocity = parseFloat(document.getElementById('relativeVelocity').value) * 1000;
+            const velocityFactor = Math.sqrt(1 - (velocity**2)/C**2);
+    
             const dilationFactor = 1 / (gravitationalFactor * velocityFactor);
-            const properTime = (dilationFactor - 1) * 1000; // ms offset
+            const properTime = dilationFactor - 1;
 
-            // Update results
-            const resultDiv = document.getElementById('timeResult');
-            let status = "status-normal";
-            let message = `Time Dilation: ${dilationFactor.toExponential(8)}<br>`;
-            message += `Proper Time: ${properTime.toFixed(6)} s`;
-
-            if(dilationFactor > 1.0000001) { // 0.1 ppm threshold
-                status = "status-alert";
-                message += "<br>⚠️ RELATIVISTIC EFFECTS DETECTED";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
+            document.getElementById('timeResult').innerHTML = 
+                `Time Dilation: ${dilationFactor.toExponential(4)}<br>
+                 Proper Time Δ: ${properTime.toExponential(4)} s`;
         }
 
-        // Entropy Calculator (Quantum Corrected)
+
+        // Revised Entropy Calculation (Quantum Coherence)
         function calculateEntropy() {
-            const temp = parseFloat(document.getElementById('ambientTemp').value);
-            const field = parseFloat(document.getElementById('magneticField').value);
-            const resultDiv = document.getElementById('entropyResult');
-            
-            if(!temp || !field || temp <= 0 || field <= 0) {
-                resultDiv.innerHTML = "⚠️ Invalid quantum conditions";
-                resultDiv.className = "result status-warning";
-                return;
-            }
-
-            // Quantum-safe entropy calculation
-            const entropy = Math.abs(Math.log(temp/293) * (1/field));
-            let status = "status-normal";
-            let message = `System Entropy: ${entropy.toFixed(2)} nat`;
-            
-            if(entropy > 6) { // Landauer's limit threshold
-                status = "status-alert";
-                message += " ⚠️ COHERENCE COLLAPSE";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
+            const T = parseFloat(document.getElementById('ambientTemp').value);
+            const B = parseFloat(document.getElementById('magneticField').value);
+    
+            // Landauer's Principle with quantum correction
+            const S = Math.abs(Math.log(T/293) * (1/B)) + (T > 1000 ? Math.log(T/1000) : 0);
+    
+            document.getElementById('entropyResult').innerHTML = 
+                `System Entropy: ${S.toFixed(3)} nat`;
         }
-
-        // Spacetime Curvature Calculator (Kretschmann-based)
+        
+        // Revised Topology Calculator (Normalized Kretschmann)
         function calculateTopology() {
-            const mass = parseFloat(document.getElementById('planetMass').value) * 1e24;
-            const density = parseFloat(document.getElementById('coreDensity').value) * 1000; // kg/m³
-            const resultDiv = document.getElementById('topologyResult');
-            
-            if(!mass || !density) {
-                resultDiv.innerHTML = "⚠️ Incomplete stellar data";
-                resultDiv.className = "result status-warning";
-                return;
-            }
-
-            // Kretschmann scalar calculation
-            const radius = Math.cbrt((3 * mass) / (4 * Math.PI * density));
-            const kretschmann = (48 * G**2 * mass**2) / (C**8 * radius**6);
-            const earthKretschmann = 1.27e-32; // m⁻⁴
-            const topology = kretschmann / earthKretschmann;
-
-            let status = "status-normal";
-            let message = `Curvature Index: ${topology.toExponential(2)}`;
-
-            if(topology > 1e6) { // Neutron star threshold
-                status = "status-alert";
-                message += " ⚠️ EXTREME CURVATURE";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
+            const M = parseFloat(document.getElementById('planetMass').value) * 1e24;
+            const ρ = parseFloat(document.getElementById('coreDensity').value) * 1000;
+    
+            const R = Math.cbrt((3*M)/(4*Math.PI*ρ));
+            const K = (48 * G**2 * M**2) / (C**8 * R**6);
+    
+            // Normalize to 0-1 scale
+            const topology = (K - 1e-50)/(1e-40 - 1e-50);
+    
+            document.getElementById('topologyResult').innerHTML = 
+                `Normalized Curvature: ${topology.toFixed(3)}`;
         }
 
         // Initialize folders
