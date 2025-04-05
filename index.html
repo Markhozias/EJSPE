@@ -305,8 +305,7 @@
             }
         }
 
-                // Revised Core Calculations
-                function calculateStability() {
+        function calculateStability() {
             try {
                 const M = parseFloat(document.getElementById('exoticMass').value);
                 const τ = parseFloat(document.getElementById('properTime').value);
@@ -317,26 +316,26 @@
                 const V = 1; // m³
                 const ρ_exotic = -M * C**2 / V; 
 
-                // 2. Quantum timescale with realistic bounds
-                const τ_quantum = Math.max(ħ / (Math.abs(ρ_exotic) * C**2, 1e-43); // Planck time floor
+                // 2. Quantum timescale with realistic bounds (fixed parentheses)
+                const τ_quantum = Math.max(ħ / (Math.abs(ρ_exotic) * C**2), 1e-43); // Planck time floor
                 const τ_ratio = τ / τ_quantum;
 
                 // 3. Curvature scaling adjustment
                 const K_contribution = (K / 0.7) * 5; // 0.7 = optimal curvature
 
-                // 4. Balanced stability formula
+                // 4. Balanced stability formula (fixed math.exp structure)
                 const stability = Math.exp(
                     - (1.0 / Math.max(M, 0.001)) - 
                     Math.log(τ_ratio * 1e43 + 1) - // Logarithmic scaling
                     (S / 6.0) + 
                     K_contribution
-
-                        // Cap probability at 100%
-                const probability = Math.min((stability * 100).toFixed(2), 100);
-                
                 );
 
-                let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
+                // Cap probability at 100% (moved outside Math.exp)
+                const probability = Math.min((stability * 100).toFixed(2), 100);
+
+                // Status messages
+                let message = `Chronostability Probability: ${probability}%<br>`;
                 let status = "status-normal";
 
                 if(M < 1.0) {
@@ -353,8 +352,8 @@
                 }
 
                 // Display results
-                document.getElementById("calculationResults").innerHTML = 
-                    `Chronostability Probability: ${probability}%`;
+                document.getElementById("calculationResults").innerHTML = message;
+                document.getElementById("results").className = `result ${status}`;
 
             } catch (error) {
                 document.getElementById("calculationResults").innerHTML = 
