@@ -305,32 +305,35 @@
             }
         }
 
-        // Revised Core Calculations
-        function calculateStability() {
+                // Revised Core Calculations
+                function calculateStability() {
             try {
-                // Main parameters
                 const M = parseFloat(document.getElementById('exoticMass').value);
                 const τ = parseFloat(document.getElementById('properTime').value);
                 const S = parseFloat(document.getElementById('entropy').value);
                 const K = parseFloat(document.getElementById('topology').value);
 
-                // 1. Calculate exotic matter density FIRST
-                const V = 1; // m³ (standardized CTC volume)
-                const ρ_exotic = -M * C**2 / V; // Negative energy density
+                // 1. Calculate negative energy density
+                const V = 1; // m³
+                const ρ_exotic = -M * C**2 / V; 
 
-                // 2. Calculate quantum timescale AFTER ρ_exotic
-                const τ_quantum = ħ / (Math.abs(ρ_exotic) * V * C**2);
+                // 2. Quantum timescale with realistic bounds
+                const τ_quantum = Math.max(ħ / (Math.abs(ρ_exotic) * C**2, 1e-43); // Planck time floor
                 const τ_ratio = τ / τ_quantum;
 
-                // 3. Normalized Curvature Factor
-                const K_normalized = K / PLANCK_CURVATURE;
+                // 3. Curvature scaling adjustment
+                const K_contribution = (K / 0.7) * 5; // 0.7 = optimal curvature
 
-                // 4. Corrected stability formula
+                // 4. Balanced stability formula
                 const stability = Math.exp(
                     - (1.0 / Math.max(M, 0.001)) - 
-                    (τ_ratio * 1e-10) -  // Reduced temporal scaling
+                    Math.log(τ_ratio * 1e43 + 1) - // Logarithmic scaling
                     (S / 6.0) + 
-                    (K_normalized * 1e4)  // Adjusted curvature scaling
+                    K_contribution
+
+                        // Cap probability at 100%
+                const probability = Math.min((stability * 100).toFixed(2), 100);
+                
                 );
 
                 let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
@@ -349,8 +352,10 @@
                     status = "status-alert";
                 }
 
-                document.getElementById("calculationResults").innerHTML = message;
-                document.getElementById("results").className = `result ${status}`;
+                // Display results
+                document.getElementById("calculationResults").innerHTML = 
+                    `Chronostability Probability: ${probability}%`;
+
             } catch (error) {
                 document.getElementById("calculationResults").innerHTML = 
                     "⚠️ Calculation Error: " + error.message;
