@@ -307,48 +307,55 @@
 
         // Revised Core Calculations
         function calculateStability() {
-            // Main parameters
-            const M = parseFloat(document.getElementById('exoticMass').value);
-            const τ = parseFloat(document.getElementById('properTime').value);
-            const S = parseFloat(document.getElementById('entropy').value);
-            const K = parseFloat(document.getElementById('topology').value);
-            const τ_quantum = ħ / (Math.abs(ρ_exotic) * V * C**2); // Added missing ħ
-            const τ_ratio = τ / τ_quantum;
+            try {
+                // Main parameters
+                const M = parseFloat(document.getElementById('exoticMass').value);
+                const τ = parseFloat(document.getElementById('properTime').value);
+                const S = parseFloat(document.getElementById('entropy').value);
+                const K = parseFloat(document.getElementById('topology').value);
 
-            // 1. Exotic Matter Validation (Negative Energy Density)
-            const V = 1; // m³ (standardized CTC volume)
-            const ρ_exotic = -M * C**2 / V; // Negative energy density
+                // 1. Calculate exotic matter density FIRST
+                const V = 1; // m³ (standardized CTC volume)
+                const ρ_exotic = -M * C**2 / V; // Negative energy density
 
-            // 3. Normalized Curvature Factor
-            const K_normalized = K / PLANCK_CURVATURE;
+                // 2. Calculate quantum timescale AFTER ρ_exotic
+                const τ_quantum = ħ / (Math.abs(ρ_exotic) * V * C**2);
+                const τ_ratio = τ / τ_quantum;
 
-            // Corrected stability formula
-            const stability = Math.exp(
-                - (1.0 / Math.max(M, 0.001)) - 
-                (τ_ratio * 1e-33) -  // Scale down temporal term
-                (S / 6.0) + 
-                (K_normalized * 1e62) // Scale up curvature
-            );
+                // 3. Normalized Curvature Factor
+                const K_normalized = K / PLANCK_CURVATURE;
 
-            let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
-            let status = "status-normal";
+                // 4. Corrected stability formula
+                const stability = Math.exp(
+                    - (1.0 / Math.max(M, 0.001)) - 
+                    (τ_ratio * 1e-33) -  // Scale down temporal term
+                    (S / 6.0) + 
+                    (K_normalized * 1e62) // Scale up curvature
+                );
 
-            if(M < 1.0) {
-                message += "⚠️ EXOTIC MASS INSUFFICIENT (Min 1kg)<br>";
-                status = "status-alert";
+                let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
+                let status = "status-normal";
+
+                if(M < 1.0) {
+                    message += "⚠️ EXOTIC MASS INSUFFICIENT (Min 1kg)<br>";
+                    status = "status-alert";
+                }
+                if(K < 0.1 || K > 1.0) {
+                    message += "⚠️ TOPOLOGY OUT OF RANGE (0.1-1.0 required)<br>";
+                    status = "status-alert";
+                }
+                if(S > 6.0) {
+                    message += "⚠️ QUANTUM DECOHERENCE DETECTED<br>";
+                    status = "status-alert";
+                }
+
+                document.getElementById("calculationResults").innerHTML = message;
+                document.getElementById("results").className = `result ${status}`;
+            } catch (error) {
+                document.getElementById("calculationResults").innerHTML = 
+                    "⚠️ Calculation Error: " + error.message;
+                document.getElementById("results").className = "result status-alert";
             }
-            if(K < 0.1 || K > 1.0) {
-                message += "⚠️ TOPOLOGY OUT OF RANGE (0.1-1.0 required)<br>";
-                status = "status-alert";
-            }
-            if(S > 6.0) {
-                message += "⚠️ QUANTUM DECOHERENCE DETECTED<br>";
-                status = "status-alert";
-            }
-
-
-            document.getElementById("calculationResults").innerHTML = message;
-            document.getElementById("results").className = `result ${status}`;
         }
 
 
@@ -422,6 +429,7 @@
         }
         
         // Revised Topology Calculator (Normalized Kretschmann)
+
         function calculateTopology() {
             const M = parseFloat(document.getElementById('planetMass').value) * 1e24;
             const ρ = parseFloat(document.getElementById('coreDensity').value) * 1000;
@@ -429,13 +437,13 @@
             const R = Math.cbrt((3*M)/(4*Math.PI*ρ));
             const K = (48 * G**2 * M**2) / (C**8 * R**6);
     
-            // Normalize to 0-1 scale
-            const topology = (K - 1e-50)/(1e-40 - 1e-50);
+            // FIXED: Changed variable name from topology to K_ratio
+            const K_ratio = K / PLANCK_CURVATURE;
     
-    document.getElementById('topologyResult').innerHTML = 
-        `Curvature Ratio: ${K_ratio.toExponential(3)}<br>
-         Status: ${K_ratio > 1e-40 ? "🟢 Nominal" : "🔴 Insufficient"}`;
-}
+            document.getElementById('topologyResult').innerHTML = 
+                `Curvature Ratio: ${K_ratio.toExponential(3)}<br>
+                 Status: ${K_ratio > 1e-40 ? "🟢 Nominal" : "🔴 Insufficient"}`;
+        }
 
         // Initialize folders
         window.onload = function() {
