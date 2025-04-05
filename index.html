@@ -328,9 +328,9 @@
                 // 4. Corrected stability formula
                 const stability = Math.exp(
                     - (1.0 / Math.max(M, 0.001)) - 
-                    (τ_ratio * 1e-33) -  // Scale down temporal term
+                    (τ_ratio * 1e-10) -  // Reduced temporal scaling
                     (S / 6.0) + 
-                    (K_normalized * 1e62) // Scale up curvature
+                    (K_normalized * 1e4)  // Adjusted curvature scaling
                 );
 
                 let message = `Chronostability Probability: ${(stability*100).toFixed(2)}%<br>`;
