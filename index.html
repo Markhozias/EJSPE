@@ -1,436 +1,1676 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CTC Quantum Drive Field Kit</title>
+    <title>TerraNova CTC Quantum Drive Field Kit v3.2.1</title>
+    <meta charset="UTF-8">
     <style>
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Courier New', monospace;
-            background-color: #0f0f23;
+            background-color: #000;
             color: #00ff00;
-            max-width: 900px;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 9999;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 255, 0, 0.1);
+            z-index: 9998;
+            pointer-events: none;
+            animation: scanline 6s linear infinite;
+        }
+
+        .container {
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
         }
-        .calculator {
-            border: 1px solid #00ff00;
-            padding: 20px;
-            margin: 20px 0;
-            background-color: #001100;
-        }
-        h1, h2, h3 {
-            color: #00cc00;
-            border-bottom: 1px solid #005500;
-        }
-        label {
-            display: inline-block;
-            width: 250px;
-            margin: 10px 0;
-        }
-        input[type="number"], input[type="text"] {
-            background-color: #001100;
-            color: #00ff00;
-            border: 1px solid #00aa00;
-            padding: 5px;
-            width: 100px;
-        }
-        .result {
-            margin-top: 20px;
+
+        .header {
+            border: 2px solid #00ff00;
             padding: 15px;
-            background-color: #002200;
-            border: 1px solid #007700;
+            margin-bottom: 20px;
+            background-color: #001100;
+            text-shadow: 0 0 5px #00ff00;
         }
-        .status-warning {
-            background-color: #332200 !important;
-            border-color: #ff8800 !important;
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
         }
-        .status-normal {
-            background-color: #002200 !important;
-            border-color: #00ff00 !important;
-        }
-        .status-alert {
-            background-color: #330000 !important;
-            border-color: #ff0000 !important;
-        }
-        .explanation {
-            font-size: 0.9em;
+
+        .header .meta {
+            font-size: 11px;
             color: #00aa00;
-            margin-top: 5px;
+            margin-top: 8px;
         }
-        .folder {
-            margin: 15px 0;
+
+        .warning-banner {
+            background-color: #330000;
+            border: 2px solid #ff0000;
+            padding: 10px;
+            margin-bottom: 20px;
+            color: #ff6666;
+            text-align: center;
+            animation: flicker 1s infinite;
+        }
+
+        .system-status {
             border: 1px solid #007700;
             padding: 10px;
+            margin-bottom: 20px;
+            background-color: #001100;
+            font-size: 12px;
         }
-        .folder-header {
+
+        .system-status .status-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+
+        .status-ok { color: #00ff00; }
+        .status-warn { color: #ffaa00; }
+        .status-error { color: #ff0000; }
+
+        .module {
+            border: 1px solid #00ff00;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #001100;
+            position: relative;
+        }
+
+        .module.locked {
+            opacity: 0.5;
+            border-color: #555;
+        }
+
+        .module.locked::after {
+            content: '🔒 LOCKED';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #330000;
+            padding: 5px 10px;
+            border: 1px solid #ff0000;
+            color: #ff0000;
+            font-size: 10px;
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             cursor: pointer;
             padding: 10px;
             background-color: #002200;
-            font-weight: bold;
+            border: 1px solid #005500;
+            margin: -15px -15px 15px -15px;
         }
-        .folder-content {
+
+        .module-header h2 {
+            color: #00cc00;
+            font-size: 18px;
+        }
+
+        .module-header .serial {
+            font-size: 10px;
+            color: #007700;
+        }
+
+        .calibration-puzzle {
+            background-color: #000;
+            border: 2px solid #00aa00;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .puzzle-input {
+            background-color: #001100;
+            color: #00ff00;
+            border: 1px solid #00aa00;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            width: 200px;
+            margin: 10px 5px;
+        }
+
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 2px solid #00aa00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #005500;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .manual {
+            background-color: #000;
+            border: 1px solid #005500;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
             display: none;
-            padding: 10px;
-            border-top: 1px dashed #005500;
         }
-        .schematic {
+
+        .manual.open {
+            display: block;
+        }
+
+        .manual h3 {
+            color: #00aa00;
+            font-size: 13px;
+            margin: 10px 0 5px 0;
+        }
+
+        .manual p {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .manual .warning {
+            color: #ffaa00;
+            border-left: 3px solid #ffaa00;
+            padding-left: 10px;
+            margin: 10px 0;
+        }
+
+        .manual .danger {
+            color: #ff6666;
+            border-left: 3px solid #ff0000;
+            padding-left: 10px;
+            margin: 10px 0;
+            background-color: #110000;
+            padding: 10px;
+        }
+
+        .calculator-interface {
+            background-color: #000;
+            border: 1px solid #00aa00;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .calculator-interface.active {
+            display: block;
+        }
+
+        .calc-input-group {
             margin: 15px 0;
             padding: 10px;
-            background-color: #000;
-            text-align: center;
-            font-family: monospace;
-            white-space: pre;
+            border-left: 2px solid #005500;
         }
-        .step {
-            margin: 10px 0;
-            padding-left: 20px;
-            border-left: 2px solid #007700;
+
+        .calc-input-group label {
+            display: block;
+            color: #00aa00;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .calc-input-group input,
+        .calc-input-group select {
+            background-color: #001100;
+            color: #00ff00;
+            border: 1px solid #00aa00;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .calc-input-group .hint {
+            font-size: 10px;
+            color: #007700;
+            margin-top: 3px;
+        }
+
+        .result-display {
+            background-color: #002200;
+            border: 2px solid #00aa00;
+            padding: 15px;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+
+        .result-display.alert {
+            border-color: #ff0000;
+            background-color: #220000;
+        }
+
+        .result-display.warning {
+            border-color: #ffaa00;
+            background-color: #221100;
+        }
+
+        .memorial {
+            background-color: #110000;
+            border: 2px solid #330000;
+            padding: 15px;
+            margin: 20px 0;
+            color: #888;
+            font-size: 11px;
+        }
+
+        .memorial h3 {
+            color: #aa0000;
+            margin-bottom: 10px;
+        }
+
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible::before {
+            content: '[+] ';
+            color: #00aa00;
+        }
+
+        .collapsible.open::before {
+            content: '[-] ';
+        }
+
+        .boot-sequence {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 40px;
+        }
+
+        .boot-text {
+            font-size: 14px;
+            line-height: 1.8;
+            max-width: 800px;
+        }
+
+        .blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
     </style>
 </head>
 <body>
-    <h1>CTC Quantum Drive Field Kit</h1>
+    <div class="scanline"></div>
     
-    <div class="calculator">
-        <div>
-            <label for="exoticMass">Exotic Matter Mass (kg):</label>
-            <input type="number" id="exoticMass" min="0" step="0.001" value="1.0">
-            <div class="explanation">Negative energy density required to stabilize CTC (≥1kg for human-scale effects)</div>
-        </div>
-        
-        <div>
-            <label for="properTime">Proper Time Duration (s):</label>
-            <input type="number" id="properTime" min="0" step="0.001" value="1.0">
-            <div class="explanation">Subjective time spent in the CTC (shorter = more stable)</div>
-        </div>
-        
-        <div>
-            <label for="entropy">System Entropy (nat):</label>
-            <input type="number" id="entropy" min="0" step="0.1" value="5.0">
-            <div class="explanation">Quantum disorder of the system (lower = more coherent)</div>
-        </div>
-        
-        <div>
-            <label for="topology">Spacetime Topology Factor:</label>
-            <input type="number" id="topology" min="0.01" step="0.01" value="0.5">
-            <div class="explanation">How "twisted" the local spacetime is (0.1-1.0 range)</div>
-        </div>
-        
-        <div class="result" id="results">
-            <h3>Quantum CTC Analysis:</h3>
-            <div id="calculationResults">Enter parameters to calculate</div>
+    <!-- Boot Sequence -->
+    <div class="boot-sequence" id="bootSequence">
+        <div class="boot-text" id="bootText">
+            > INITIALIZING TERRANOVA CTC QUANTUM DRIVE FIELD KIT v3.2.1<br>
+            > Firmware Build: 2027.08.14-REV3<br>
+            > Serial: TN-CTCQD-00742-GS<br>
+            <br>
+            > Checking hardware integrity...<br>
+            <span class="blink">_</span>
         </div>
     </div>
 
-    <!-- Exotic Matter Mass Folder -->
-    <div class="folder">
-        <div class="folder-header" onclick="toggleFolder('exoticFolder')">
-            [+] Exotic Matter Mass Measurement
-        </div>
-        <div class="folder-content" id="exoticFolder">
-            <h3>Vacuum Energy Scanner</h3>
-            <div class="schematic">
-                [LASER]══▶[CASIMIR CAVITY]══▶[DETECTOR]
-                          ▲             │
-                          │             ▼
-                    [QUANTUM PUMP]◀══[ANALYZER]
-            </div>
-            <div class="step">
-                <strong>Step 1:</strong> Point at planet's atmosphere<br>
-                <input type="text" id="planetName1" placeholder="Planet Name" value="Earth">
-            </div>
-            <div class="step">
-                <strong>Step 2:</strong> Enter local air pressure (kPa)<br>
-                <input type="number" id="airPressure" value="101.3" min="0" step="0.1"> kPa
-            </div>
-            <div class="step">
-                <strong>Step 3:</strong> Set gravity compensation<br>
-                <input type="number" id="localGravity1" value="9.81" min="0" step="0.1"> m/s²
-            </div>
-            <div class="calculator">
-                <button onclick="calculateExotic()">Calculate Exotic Mass</button>
-                <div class="result" id="exoticResult">
-                    Exotic Mass: -- kg
-                </div>
-                <div class="explanation">
-                    Higher air pressure = easier to detect exotic particles<br>
-                    Lower gravity = more sensitive measurements
-                </div>
+    <div class="container" id="mainInterface" style="display: none;">
+        <!-- Header -->
+        <div class="header">
+            <h1>║ TERRANOVA QUANTUM DRIVE FIELD KIT ║</h1>
+            <div style="font-size: 12px;">CTC Checkpoint Navigation System v3.2.1</div>
+            <div class="meta">
+                <div>Manufactured by: TerraNova Deep Space Industries, Ltd.</div>
+                <div>Serial Number: TN-CTCQD-00742-GS | Firmware: 2027.08.14-REV3</div>
+                <div>Last Calibration: [UNKNOWN] | Mission Year: [CALCULATE FROM SHIP TIME]</div>
+                <div>Operator Certification Required: Class-IV Quantum Mechanics Specialist</div>
             </div>
         </div>
-    </div>
 
-    <!-- Proper Time Duration Folder -->
-    <div class="folder">
-        <div class="folder-header" onclick="toggleFolder('timeFolder')">
-            [+] Proper Time Measurement
+        <!-- Warning Banner -->
+        <div class="warning-banner">
+            ⚠️ WARNING: CTC FORMATION HAZARD ⚠️<br>
+            ANTI-CAUSALITY PROTOCOLS ACTIVE | DO NOT OPERATE WITHOUT PROPER TRAINING<br>
+            REMEMBER: LIGHT-DRIVE CASUALTIES - 47 SOULS | NEVER AGAIN
         </div>
-        <div class="folder-content" id="timeFolder">
-            <h3>Time Warp Chronometer</h3>
-            <div class="schematic">
-                [ATOMIC CLOCK]══▶[WARP FIELD]══▶[COMPARATOR]
-                         │               ▲
-                         ▼               │
-                    [GPS SYNC]◀══[DISPLAY]
-            </div>
 
-            <div class="step">
-                <strong>Step 1:</strong> Select measurement type<br>
-                <select id="dilationType" onchange="toggleDilationInputs()">
-                    <option value="planetSurface">Planetary Surface</option>
-                    <option value="orbital">Orbital Measurement</option>
-                </select>
+        <!-- System Status -->
+        <div class="system-status">
+            <div style="margin-bottom: 10px; font-weight: bold;">SYSTEM STATUS:</div>
+            <div class="status-line">
+                <span>Power Distribution:</span>
+                <span class="status-ok" id="statusPower">OFFLINE</span>
             </div>
-
-            <!-- Planetary Surface Inputs -->
-            <div class="step" id="planetSurfaceInputs">
-                <strong>Step 2a:</strong> Local gravity<br>
-                <input type="number" id="localGravity" value="9.81" min="0" step="0.1"> m/s²
+            <div class="status-line">
+                <span>Quantum Coherence Matrix:</span>
+                <span class="status-error" id="statusQuantum">NOT INITIALIZED</span>
             </div>
-
-            <!-- Orbital Inputs -->
-            <div class="step" id="orbitalInputs" style="display:none;">
-                <strong>Step 2b:</strong> Central body mass<br>
-                <input type="number" id="centralMass" value="5.97" step="0.01"> ×10²⁴ kg<br>
-                <strong>Step 2c:</strong> Orbital radius<br>
-                <input type="number" id="orbitalRadius" value="6371" step="10"> km
+            <div class="status-line">
+                <span>Supercomputer Link:</span>
+                <span class="status-warn" id="statusComputer">STANDBY</span>
             </div>
-
-            <div class="step">
-                <strong>Step 3:</strong> Relative velocity<br>
-                <input type="number" id="relativeVelocity" value="0" min="0" step="100"> km/s
-            </div>
-
-            <div class="calculator">
-                <button onclick="calculateTime()">Calculate Time Effects</button>
-                <div class="result" id="timeResult">
-                    Time Dilation Factor: --<br>
-                    Proper Time: -- s
-                </div>
-                <div class="explanation">
-                    Higher gravity/velocity = more time dilation<br>
-                    Earth surface dilation: ~1.0000000007<br>
-                    GPS satellite dilation: ~1.0000000004
-                </div>
+            <div class="status-line">
+                <span>Modules Online:</span>
+                <span id="statusModules">0/4</span>
             </div>
         </div>
-    </div>
 
-    <!-- System Entropy Folder -->
-    <div class="folder">
-        <div class="folder-header" onclick="toggleFolder('entropyFolder')">
-            [+] Quantum Entropy Measurement
+        <!-- Memorial Section -->
+        <div class="memorial">
+            <h3>IN MEMORIAM - LIGHT-DRIVE TEST PROGRAM (2028-2031)</h3>
+            <p style="font-style: italic; margin-bottom: 10px;">
+                "Their sacrifice taught us: some prices are too high, even for the stars."
+            </p>
+            <p style="font-size: 10px;">
+                The 47 crew members lost during Light-Drive trials taught humanity that faster 
+                does not mean safer. Incomplete rematerializations, antimatter containment failures, 
+                and quantum decoherence events claimed Jenkins (arm), Rodriguez (eyes), Chen (lungs), 
+                and 44 others. The CTC method, while more complex, ensures crew integrity. Their 
+                names are etched on the Memorial Wall, Hull Section 7-A.
+            </p>
+            <p style="font-size: 10px; color: #555; margin-top: 10px;">
+                Light-Drive technology relegated to non-biological matter fabrication only.
+                Human traversal: PERMANENTLY FORBIDDEN per Resolution 2031-LD-BAN.
+            </p>
         </div>
-        <div class="folder-content" id="entropyFolder">
-            <h3>Decoherence Detector</h3>
-            <div class="schematic">
-                [QUBIT]══▶[COIL]══▶[READER]
-                   ▲         │
-                   │         ▼
-                [COOLER]◀═[DISPLAY]
-            </div>
-            <div class="step">
-                <strong>Step 1:</strong> Ambient temperature<br>
-                <input type="number" id="ambientTemp" value="293" min="0"> K
-            </div>
-            <div class="step">
-                <strong>Step 2:</strong> Magnetic field strength<br>
-                <input type="number" id="magneticField" value="1.0" min="0" step="0.1"> Tesla
-            </div>
-            <div class="calculator">
-                <button onclick="calculateEntropy()">Calculate Entropy</button>
-                <div class="result" id="entropyResult">
-                    System Entropy: -- nat
-                </div>
-                <div class="explanation">
-                    Higher temperature = more quantum noise<br>
-                    Stronger magnetic fields = better coherence
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Spacetime Topology Folder -->
-    <div class="folder">
-        <div class="folder-header" onclick="toggleFolder('topologyFolder')">
-            [+] Spacetime Curvature Measurement
+        <!-- Mission Brief -->
+        <div class="module">
+            <div class="module-header collapsible" onclick="toggleSection('missionBrief')">
+                <h2>MISSION BRIEFING & OPERATIONAL THEORY</h2>
+                <span class="serial">DOC-MB-v2.4</span>
+            </div>
+            <div id="missionBrief" class="manual">
+                <h3>1. MISSION OVERVIEW</h3>
+                <p>
+                    The Generational Ship Project launched 2028 CE with the objective of establishing 
+                    humanity's first extrasolar colonies. Following the catastrophic Light-Drive trials 
+                    (2028-2031), mission parameters shifted to Closed Timelike Curve (CTC) navigation.
+                </p>
+
+                <h3>2. CTC NAVIGATION PRINCIPLES</h3>
+                <p>
+                    Unlike Light-Drive (matter→energy→matter conversion), CTC traversal maintains ship 
+                    and crew integrity by creating localized spacetime loops. Time within the CTC = 0, 
+                    therefore no molecular disassembly occurs.
+                </p>
+                <p class="warning">
+                    <strong>CRITICAL:</strong> CTCs are one-time use. Each traversal requires:
+                    <br>• Establishment of forward piton anchor
+                    <br>• Transmission of backward piton (for following vessels)
+                    <br>• Exact parameter calculation (see modules below)
+                </p>
+
+                <h3>3. CHECKPOINT SYSTEM</h3>
+                <p>
+                    Navigation occurs via checkpoint hopping. Each checkpoint cluster requires:
+                    <br>1. Installation of 4 field measurement instruments
+                    <br>2. Data collection and supercomputer analysis
+                    <br>3. CTC viability assessment
+                    <br>4. Piton exchange protocol
+                </p>
+                <p>
+                    Halfway recalibration stops prevent cumulative trajectory error. Miscalculation 
+                    may result in emergence at unintended galactic coordinates with no return path.
+                </p>
+
+                <h3>4. PITON EXCHANGE MECHANICS</h3>
+                <p>
+                    The piton system maintains causality integrity:
+                    <br>• Forward piton: Launched at near-c speeds, establishes anchor point
+                    <br>• Backward piton: Thrown simultaneously, allows following crew to track route
+                    <br>• Exchange must be simultaneous to preserve timeline consistency
+                </p>
+                <p class="danger">
+                    <strong>CAUSALITY WARNING:</strong> Failure to transmit backward piton results in 
+                    temporal paradox resolution. Your ship may cease to exist in both timeline branches.
+                </p>
+
+                <h3>5. REQUIRED PARAMETERS FOR STABLE CTC</h3>
+                <p>
+                    Four measurements determine CTC viability at any given checkpoint:
+                    <br><br>
+                    <strong>A. EXOTIC MATTER MASS (≥0.14kg minimum)</strong>
+                    <br>Negative energy density required to stabilize wormhole throat.
+                    Casimir-effect-based vacuum energy extraction.
+                    <br><br>
+                    <strong>B. PROPER TIME DURATION (target: &lt;10⁻⁸⁰ seconds)</strong>
+                    <br>Subjective time inside CTC. Lower values = higher stability.
+                    Trans-Planckian regime values acceptable (beyond 10⁻⁴³s threshold).
+                    <br><br>
+                    <strong>C. SYSTEM ENTROPY (&lt;5.0 nat target)</strong>
+                    <br>Quantum coherence measurement. Requires sub-Kelvin temps + megatesla fields.
+                    Higher entropy = decoherence = CTC collapse.
+                    <br><br>
+                    <strong>D. SPACETIME TOPOLOGY FACTOR (0.1-1.0 range)</strong>
+                    <br>Measures frame-dragging and spacetime twist from massive objects.
+                    Requires post-nuclear densities (10⁵⁰+ g/cm³) for nominal curvature.
+                </p>
+
+                <h3>6. COMPARISON: LIGHT-DRIVE vs CTC</h3>
+                <p style="font-size: 10px;">
+                    <strong>Light-Drive (DEPRECATED):</strong>
+                    <br>✓ Faster setup time (hours vs weeks)
+                    <br>✓ Lower exotic matter requirements
+                    <br>✗ 8.2% catastrophic failure rate
+                    <br>✗ Crew disassembly/reassembly required
+                    <br>✗ Requires perfect stillness during conversion
+                    <br>✗ Antimatter handling at both endpoints
+                    <br>✗ AI-dependent reconstruction (no human oversight possible)
+                    <br><br>
+                    <strong>CTC Method (CURRENT):</strong>
+                    <br>✓ 0.03% failure rate
+                    <br>✓ Ship/crew integrity maintained
+                    <br>✓ No molecular disassembly
+                    <br>✓ Time dilation = 0 (instantaneous subjective experience)
+                    <br>✗ Requires extreme conditions (Planck-density singularities, etc.)
+                    <br>✗ Longer setup time (weeks to months)
+                    <br>✗ One-time use per CTC
+                </p>
+
+                <h3>7. EMERGENCY PROCEDURES</h3>
+                <p class="danger">
+                    If CTC formation probability &lt;50%: ABORT MISSION<br>
+                    If exotic matter mass &lt;0.14kg: DO NOT ATTEMPT TRAVERSAL<br>
+                    If quantum entropy &gt;10.0 nat: SEVERE DECOHERENCE - HALT ALL OPERATIONS<br>
+                    If piton exchange fails: Crew must remain at checkpoint indefinitely
+                </p>
+            </div>
         </div>
-        <div class="folder-content" id="topologyFolder">
-            <h3>Gravity Warp Scanner</h3>
-            <div class="schematic">
-                [LASER GRID]══▶[DETECTOR ARRAY]
-                     ▲              │
-                     │              ▼
-                [PULSAR REF]◀═[ANALYZER]
+
+        <!-- Module 1: Power Calibration -->
+        <div class="module locked" id="module1">
+            <div class="module-header">
+                <h2>MODULE 1: POWER DISTRIBUTION CALIBRATION</h2>
+                <span class="serial">SN: TN-PWR-2741 | Rev. 3.1</span>
             </div>
-            <div class="step">
-                <strong>Step 1:</strong> Planetary mass<br>
-                <input type="number" id="planetMass" value="5.97" min="0" step="0.01"> ×10²⁴ kg
-            </div>
-            <div class="step">
-                <strong>Step 2:</strong> Core density<br>
-                <input type="number" id="coreDensity" value="12" min="0" step="0.1"> g/cm³
-            </div>
-            <div class="calculator">
-                <button onclick="calculateTopology()">Calculate Curvature</button>
-                <div class="result" id="topologyResult">
-                    Topology Factor: --
-                </div>
-                <div class="explanation">
-                    More massive planets = more spacetime bending<br>
-                    Denser cores = stronger local curvature effects
+            
+            <div class="manual">
+                <p>This module must be initialized before instrument deployment.</p>
+                
+                <div class="calibration-puzzle">
+                    <div style="margin-bottom: 15px; color: #ffaa00;">
+                        POWER GRID SYNCHRONIZATION REQUIRED
+                    </div>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        The ship's ODS alloy hull creates electromagnetic interference. 
+                        Synchronize instrument power frequency to ship's baseline to prevent cascade failures.
+                    </p>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        <strong>Ship baseline frequency:</strong> 50.00 Hz<br>
+                        <strong>Instrument frequency range:</strong> 45-55 Hz<br>
+                        <strong>Maximum deviation tolerance:</strong> ±0.1 Hz
+                    </p>
+                    <p style="font-size: 10px; color: #00aa00; margin-bottom: 15px;">
+                        TIP: Instruments must match ship frequency exactly. Calculate: ship_freq + calibration_offset
+                        <br>Calibration offset for this checkpoint: +0.0 Hz (standard sync)
+                    </p>
+                    <label style="font-size: 12px;">Enter synchronization frequency (Hz):</label><br>
+                    <input type="number" id="powerFreq" class="puzzle-input" step="0.01" placeholder="XX.XX">
+                    <button onclick="checkPowerCalibration()">SYNCHRONIZE</button>
+                    <div id="powerResult" style="margin-top: 10px; color: #ffaa00;"></div>
                 </div>
             </div>
         </div>
+
+        <!-- Module 2: Quantum Initialization -->
+        <div class="module locked" id="module2">
+            <div class="module-header">
+                <h2>MODULE 2: QUANTUM COHERENCE INITIALIZATION</h2>
+                <span class="serial">SN: TN-QCI-8821 | Rev. 2.9</span>
+            </div>
+            
+            <div class="manual">
+                <p>Quantum subsystems require wavefunction collapse pattern verification.</p>
+                
+                <div class="calibration-puzzle">
+                    <div style="margin-bottom: 15px; color: #ffaa00;">
+                        WAVEFUNCTION STABILIZATION SEQUENCE
+                    </div>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        Quantum measurement instruments operate in superposition until observed. 
+                        To prevent Schrödinger lock (instrument existing in undefined state), 
+                        verify the quantum signature.
+                    </p>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        <strong>Expected signature format:</strong> QBIT-[4-digit-hex]<br>
+                        <strong>Current system entropy baseline:</strong> 5.0 nat<br>
+                        <strong>Signature generation:</strong> Convert entropy value to hex
+                    </p>
+                    <p style="font-size: 10px; color: #00aa00; margin-bottom: 15px;">
+                        TIP: Baseline entropy = 5.0 in decimal. Convert to integer (5), then to hex.
+                        <br>Format answer as: QBIT-XXXX (hex must be 4 digits, pad with zeros)
+                    </p>
+                    <label style="font-size: 12px;">Enter quantum signature:</label><br>
+                    <input type="text" id="quantumSig" class="puzzle-input" placeholder="QBIT-XXXX" style="width: 250px;">
+                    <button onclick="checkQuantumInit()">VERIFY SIGNATURE</button>
+                    <div id="quantumResult" style="margin-top: 10px; color: #ffaa00;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 3: Antimatter Safety -->
+        <div class="module locked" id="module3">
+            <div class="module-header">
+                <h2>MODULE 3: ANTIMATTER SAFETY PROTOCOLS</h2>
+                <span class="serial">SN: TN-AMS-4429 | Rev. 4.0</span>
+            </div>
+            
+            <div class="manual">
+                <p class="danger">
+                    <strong>DANGER: ANTIMATTER HANDLING</strong><br>
+                    Though Light-Drive is deprecated for human use, antimatter reserves remain onboard 
+                    for light-drive printing and emergency power. Containment breach = total ship loss.
+                </p>
+                
+                <div class="calibration-puzzle">
+                    <div style="margin-bottom: 15px; color: #ff6666;">
+                        SAFETY ACKNOWLEDGMENT REQUIRED
+                    </div>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        Before initializing exotic matter measurement systems, you must acknowledge 
+                        Light-Drive casualties and confirm understanding of antimatter hazards.
+                    </p>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        <strong>Question:</strong> How many crew members were lost during Light-Drive trials?<br>
+                        <strong>Reference:</strong> See Memorial Section above
+                    </p>
+                    <p style="font-size: 10px; color: #00aa00; margin-bottom: 15px;">
+                        TIP: This information is in the Memorial Section at the top of the interface.
+                        <br>Enter the number only (no text).
+                    </p>
+                    <label style="font-size: 12px;">Number of Light-Drive casualties:</label><br>
+                    <input type="number" id="casualties" class="puzzle-input" placeholder="XX">
+                    <button onclick="checkSafetyAck()">ACKNOWLEDGE</button>
+                    <div id="safetyResult" style="margin-top: 10px; color: #ff6666;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 4: Supercomputer Link -->
+        <div class="module locked" id="module4">
+            <div class="module-header">
+                <h2>MODULE 4: SUPERCOMPUTER INTERFACE LINK</h2>
+                <span class="serial">SN: TN-SCI-9103 | Rev. 3.3</span>
+            </div>
+            
+            <div class="manual">
+                <p>Final step: Establish handshake with ship's quantum supercomputer.</p>
+                
+                <div class="calibration-puzzle">
+                    <div style="margin-bottom: 15px; color: #ffaa00;">
+                        AUTHENTICATION HANDSHAKE REQUIRED
+                    </div>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        The supercomputer requires proof that you've successfully calibrated all prior modules.
+                        Calculate the authentication key using system values.
+                    </p>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        <strong>Authentication formula:</strong><br>
+                        KEY = (Power_Freq × 100) + Casualties + (Entropy × 10)
+                    </p>
+                    <p style="font-size: 11px; margin-bottom: 10px;">
+                        Where:<br>
+                        • Power_Freq = 50.00 Hz (from Module 1)<br>
+                        • Casualties = 47 (from Module 3)<br>
+                        • Entropy = 5.0 nat (baseline from Module 2)
+                    </p>
+                    <p style="font-size: 10px; color: #00aa00; margin-bottom: 15px;">
+                        TIP: Calculate step by step:
+                        <br>1. Power_Freq × 100 = ?
+                        <br>2. Add Casualties = ?
+                        <br>3. Add (Entropy × 10) = ?
+                        <br>Example: If values were 10, 5, 2: (10×100)+5+(2×10) = 1025
+                    </p>
+                    <label style="font-size: 12px;">Enter authentication key:</label><br>
+                    <input type="number" id="authKey" class="puzzle-input" placeholder="XXXX">
+                    <button onclick="checkAuthKey()">ESTABLISH LINK</button>
+                    <div id="authResult" style="margin-top: 10px; color: #ffaa00;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instrument Calculators (All locked initially) -->
+        
+        <!-- Exotic Matter Scanner -->
+        <div class="module locked" id="instrument1">
+            <div class="module-header collapsible" onclick="toggleSection('exotic1Manual')">
+                <h2>INSTRUMENT 1: VACUUM ENERGY SCANNER</h2>
+                <span class="serial">Model: TN-VES-Mark-IV | SN: 07421-A</span>
+            </div>
+            
+            <div id="exotic1Manual" class="manual">
+                <h3>INSTALLATION PROCEDURE</h3>
+                <p>1. Deploy orbital platform at 10,000-50,000m altitude above target body</p>
+                <p>2. Align Casimir cavity plates (d = 1μm separation, ±0.01μm tolerance)</p>
+                <p>3. Initialize quantum vacuum pump (requires 2.3MW continuous power)</p>
+                <p>4. Calibrate photomultiplier tubes (PMT) for Casimir photon detection</p>
+                <p>5. Establish laser interferometry baseline (λ = 532nm, stabilized)</p>
+                <p class="warning">
+                    WARNING: Gravitational gradients &gt;0.1 m/s² will desynchronize cavity plates.
+                    Deploy in microgravity environments or use active compensation.
+                </p>
+
+                <h3>MEASUREMENT THEORY</h3>
+                <p>
+                    The Casimir effect generates negative energy density between closely-spaced conducting plates.
+                    In the presence of atmospheric pressure and gravitational fields, exotic matter production scales as:
+                    <br><br>
+                    <strong>E_exotic ≈ (P - P_threshold) × (g_reference / g_local) × k_calibration</strong>
+                    <br><br>
+                    Where P_threshold ≈ 109.4 kPa represents the minimum pressure for stable particle production.
+                </p>
+
+                <h3>OPERATIONAL NOTES</h3>
+                <p class="danger">
+                    CRITICAL: This instrument uses principles derived from failed Light-Drive containment systems.
+                    Antimatter seal technology is NOT fully understood. In case of exotic matter mass &gt;1000kg,
+                    evacuate measurement zone immediately. Runaway Casimir effect may occur.
+                </p>
+
+                <h3>TROUBLESHOOTING</h3>
+                <p style="font-size: 10px;">
+                    ERROR CODE 0x01: "EXOTIC FLUX ANOMALY" - Negative exotic matter detected. Check atmospheric pressure &lt; threshold.<br>
+                    ERROR CODE 0x02: "EXTREME NEGATIVE ENERGY" - Mass &lt; -1000kg. Possible containment breach.<br>
+                    ERROR CODE 0x03: "INSUFFICIENT FOR CTC" - Mass &lt; 0.14kg. Seek higher pressure/lower gravity environment.<br>
+                    ERROR CODE 0x04: "BELOW HUMAN-SCALE THRESHOLD" - Mass &lt; 1kg but &gt;0.14kg. CTC possible but not recommended for crew.<br>
+                </p>
+            </div>
+
+            <div class="calculator-interface" id="exotic1Calc">
+                <h3 style="color: #00cc00; margin-bottom: 15px;">VACUUM ENERGY SCANNER - DATA INPUT</h3>
+                
+                <div style="text-align: center; margin: 20px 0; padding: 15px; background: #000; border: 1px solid #00aa00;">
+                    <pre style="color: #00ff00; font-size: 11px;">
+[LASER]══▶[CASIMIR CAVITY]══▶[DETECTOR]
+          ▲             │
+          │             ▼
+    [QUANTUM PUMP]◀══[ANALYZER]
+                    </pre>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Target Body Designation:</label>
+                    <input type="text" id="exotic1Planet" placeholder="e.g., Checkpoint-7B" value="Unknown Body">
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Local Atmospheric Pressure (kPa):</label>
+                    <input type="number" id="exotic1Pressure" step="0.1" min="0" value="101.3">
+                    <div class="hint">Earth standard: 101.3 kPa | Gas giants: 200+ kPa | Deep space: ~0 kPa</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Gravity Compensation (m/s²):</label>
+                    <input type="number" id="exotic1Gravity" step="0.01" min="0.001" value="9.81">
+                    <div class="hint">Earth: 9.81 | Jupiter: ~25 | Microgravity orbit: &lt;1.0 | Zero-g: NOT SUPPORTED</div>
+                </div>
+
+                <button onclick="calculateExoticMatter()">EXECUTE MEASUREMENT</button>
+
+                <div class="result-display" id="exotic1Result">
+                    <div style="color: #00aa00;">Awaiting measurement execution...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proper Time Chronometer -->
+        <div class="module locked" id="instrument2">
+            <div class="module-header collapsible" onclick="toggleSection('time2Manual')">
+                <h2>INSTRUMENT 2: TIME WARP CHRONOMETER</h2>
+                <span class="serial">Model: TN-TWC-Mark-III | SN: 08842-B</span>
+            </div>
+            
+            <div id="time2Manual" class="manual">
+                <h3>INSTALLATION PROCEDURE</h3>
+                <p>1. Install atomic clock array (Cesium-133 standard, 9.192 GHz hyperfine transition)</p>
+                <p>2. Deploy GPS synchronization constellation (minimum 4 satellites)</p>
+                <p>3. Position chronometer in stable orbit (minimize perturbations &lt;0.001 m/s²)</p>
+                <p>4. Establish warp field measurement grid (100m baseline interferometry)</p>
+                <p>5. Calibrate relativity coefficients for local spacetime curvature</p>
+
+                <h3>MEASUREMENT THEORY</h3>
+                <p>
+                    Proper time (τ) measures the subjective time experienced during CTC traversal.
+                    Two relativistic effects contribute:<br><br>
+                    <strong>Gravitational Time Dilation:</strong> Δt_grav = √(1 - 2GM/rc²)<br>
+                    <strong>Velocity Time Dilation:</strong> Δt_vel = √(1 - v²/c²)<br><br>
+                    Combined: τ = t × Δt_grav × Δt_vel
+                </p>
+
+                <p class="warning">
+                    WARNING: Surface measurements return NULL values due to seismic interference and 
+                    atmospheric turbulence. Orbital deployment MANDATORY for CTC calculations.
+                </p>
+
+                <h3>TRANS-PLANCKIAN REGIME</h3>
+                <p class="danger">
+                    Proper time values below Planck time (5.391×10⁻⁴⁴ seconds) enter trans-Planckian regime
+                    where quantum gravity effects dominate. Standard general relativity breaks down.
+                    <br><br>
+                    However: CTC stability REQUIRES trans-Planckian proper time. Target: &lt;10⁻⁸⁰ seconds.
+                    <br><br>
+                    At these timescales, spacetime itself becomes quantized. Ship traversal occurs 
+                    "between" Planck time units - effectively instantaneous from crew perspective.
+                </p>
+
+                <h3>OPERATIONAL NOTES</h3>
+                <p>
+                    Longer proper time = more opportunity for quantum decoherence and causality violation.
+                    Shorter proper time = more stable CTC but requires increasingly extreme conditions.
+                    <br><br>
+                    The trade-off: Light-Drive had near-zero proper time but required molecular disassembly.
+                    CTC method achieves same result without crew endangerment.
+                </p>
+
+                <h3>TROUBLESHOOTING</h3>
+                <p style="font-size: 10px;">
+                    ERROR CODE 0x10: "SURFACE MEASUREMENTS INVALID" - Deploy to orbit.<br>
+                    ERROR CODE 0x11: "VELOCITY EXCEEDS LIGHTSPEED" - Impossible measurement, check inputs.<br>
+                    ERROR CODE 0x12: "TRANS-PLANCKIAN REGIME" - Normal for CTC operations, not an error.<br>
+                    ERROR CODE 0x13: "SIGNIFICANT RELATIVISTIC EFFECTS" - Δt divergence &gt; 1ppm detected.<br>
+                </p>
+            </div>
+
+            <div class="calculator-interface" id="time2Calc">
+                <h3 style="color: #00cc00; margin-bottom: 15px;">TIME WARP CHRONOMETER - DATA INPUT</h3>
+                
+                <div style="text-align: center; margin: 20px 0; padding: 15px; background: #000; border: 1px solid #00aa00;">
+                    <pre style="color: #00ff00; font-size: 11px;">
+[ATOMIC CLOCK]══▶[WARP FIELD]══▶[COMPARATOR]
+         │               ▲
+         ▼               │
+    [GPS SYNC]◀══[DISPLAY]
+                    </pre>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Measurement Mode:</label>
+                    <select id="time2Mode">
+                        <option value="orbital">Orbital Measurement</option>
+                        <option value="surface">Planetary Surface (NOT RECOMMENDED)</option>
+                    </select>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Measurement Altitude (meters):</label>
+                    <input type="number" id="time2Altitude" step="1" min="0" value="12">
+                    <div class="hint">Typical orbital: 10,000-50,000m | GPS altitude: ~20,200,000m</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Relative Velocity (km/s):</label>
+                    <input type="number" id="time2Velocity" step="100" min="0" value="0">
+                    <div class="hint">Orbital velocity: 7-8 km/s | Escape velocity: 11-12 km/s | c = 299,792 km/s</div>
+                </div>
+
+                <button onclick="calculateProperTime()">EXECUTE MEASUREMENT</button>
+
+                <div class="result-display" id="time2Result">
+                    <div style="color: #00aa00;">Awaiting measurement execution...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decoherence Detector -->
+        <div class="module locked" id="instrument3">
+            <div class="module-header collapsible" onclick="toggleSection('entropy3Manual')">
+                <h2>INSTRUMENT 3: DECOHERENCE DETECTOR</h2>
+                <span class="serial">Model: TN-DDT-Mark-V | SN: 09553-C</span>
+            </div>
+            
+            <div id="entropy3Manual" class="manual">
+                <h3>INSTALLATION PROCEDURE</h3>
+                <p>1. Deploy cryogenic cooling system (target: &lt;1mK, requires 15MW heat extraction)</p>
+                <p>2. Install superconducting quantum interference device (SQUID) magnetometer</p>
+                <p>3. Position qubit array in magnetic field isolator (μ-metal shielding, 6 layers minimum)</p>
+                <p>4. Calibrate quantum state tomography equipment</p>
+                <p>5. Establish coherence baseline measurement (&gt;1000 measurement cycles)</p>
+
+                <p class="warning">
+                    WARNING: Decoherence rates increase exponentially with temperature.
+                    Sub-kelvin cooling MANDATORY for CTC-grade measurements. Equipment failure at T &gt; 10K.
+                </p>
+
+                <h3>MEASUREMENT THEORY</h3>
+                <p>
+                    Quantum entropy (S) measures system disorder in units of nats (natural units).
+                    Lower entropy = higher quantum coherence = more stable CTC.
+                    <br><br>
+                    Entropy scales with temperature (thermal noise) and inversely with magnetic field strength
+                    (which suppresses decoherence via Zeeman splitting):
+                    <br><br>
+                    <strong>S ≈ k × ln(T) / ln(B + 1)</strong>
+                    <br><br>
+                    Where k ≈ 20 (calibration constant), T = temperature (K), B = magnetic field (Tesla).
+                </p>
+
+                <h3>EXTREME CONDITIONS REQUIRED</h3>
+                <p class="danger">
+                    Target entropy &lt; 5.0 nat requires conditions found nowhere in nature:
+                    <br><br>
+                    • Temperature: &lt; 0.001 K (millikelvin regime)
+                    <br>• Magnetic field: &gt; 10⁶ Tesla (beyond magnetar fields: 10⁹-10¹¹ T)
+                    <br><br>
+                    These conditions require active engineering:
+                    <br>• Dilution refrigerators (³He-⁴He mixture cooling)
+                    <br>• Superconducting electromagnets (NbTi or Nb₃Sn coils)
+                    <br>• Isolated from ship vibrations (&lt; 10⁻⁹ m/s² seismic noise)
+                    <br><br>
+                    For reference: Strongest human-made field = ~1200 T (pulsed, destructive test)
+                    <br>CTC requirements exceed this by 1000× continuously.
+                </p>
+
+                <h3>POST-MAGNETAR FIELD REGIME</h3>
+                <p style="font-size: 11px;">
+                    At field strengths &gt; 10⁹ T, exotic quantum phenomena emerge:
+                    <br>• Vacuum polarization (virtual electron-positron pairs become real)
+                    <br>• Magnetic monopole production (theoretical)
+                    <br>• Spacetime metric alterations (magnetic field stress-energy)
+                    <br><br>
+                    These effects are BENEFICIAL for CTC formation but poorly understood.
+                </p>
+
+                <h3>TROUBLESHOOTING</h3>
+                <p style="font-size: 10px;">
+                    ERROR CODE 0x20: "INVALID QUANTUM CONDITIONS" - Temperature or field ≤ 0.<br>
+                    ERROR CODE 0x21: "SEVERE QUANTUM DECOHERENCE" - Entropy &gt; 10.0 nat, abort measurement.<br>
+                    ERROR CODE 0x22: "QUANTUM DECOHERENCE DETECTED" - Entropy &gt; 5.0 nat, CTC unstable.<br>
+                    ERROR CODE 0x23: "SUB-MICROKELVIN REGIME" - T &lt; 1μK, exceptional cooling achieved.<br>
+                    ERROR CODE 0x24: "BEYOND MAGNETAR FIELDS" - B &gt; 10¹² T, entering unexplored physics.<br>
+                </p>
+            </div>
+
+            <div class="calculator-interface" id="entropy3Calc">
+                <h3 style="color: #00cc00; margin-bottom: 15px;">DECOHERENCE DETECTOR - DATA INPUT</h3>
+                
+                <div style="text-align: center; margin: 20px 0; padding: 15px; background: #000; border: 1px solid #00aa00;">
+                    <pre style="color: #00ff00; font-size: 11px;">
+[QUBIT]══▶[COIL]══▶[READER]
+   ▲         │
+   │         ▼
+[COOLER]◀═[DISPLAY]
+                    </pre>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Ambient Temperature (Kelvin):</label>
+                    <input type="number" id="entropy3Temp" step="0.0001" min="0.0001" value="293">
+                    <div class="hint">Room temp: 293K | Liquid nitrogen: 77K | Liquid helium: 4K | Target: &lt;0.001K</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Magnetic Field Strength (Tesla):</label>
+                    <input type="number" id="entropy3Field" step="0.1" min="0.001" value="1.0">
+                    <div class="hint">Earth: 0.00005T | MRI: 1-3T | Lab record: 1200T | Magnetar: 10⁹-10¹¹T</div>
+                </div>
+
+                <button onclick="calculateEntropy()">EXECUTE MEASUREMENT</button>
+
+                <div class="result-display" id="entropy3Result">
+                    <div style="color: #00aa00;">Awaiting measurement execution...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gravity Warp Scanner -->
+        <div class="module locked" id="instrument4">
+            <div class="module-header collapsible" onclick="toggleSection('curvature4Manual')">
+                <h2>INSTRUMENT 4: GRAVITY WARP SCANNER</h2>
+                <span class="serial">Model: TN-GWS-Mark-II | SN: 10661-D</span>
+            </div>
+            
+            <div id="curvature4Manual" class="manual">
+                <h3>INSTALLATION PROCEDURE</h3>
+                <p>1. Deploy laser interferometer grid (LIGO-inspired design, 4km baseline minimum)</p>
+                <p>2. Establish pulsar timing array (minimum 20 pulsars, millisecond period preferred)</p>
+                <p>3. Calibrate gravitational wave detectors (strain sensitivity &lt; 10⁻²¹)</p>
+                <p>4. Map local spacetime curvature via photon deflection measurements</p>
+                <p>5. Compute Kretschmann scalar from accumulated data</p>
+
+                <h3>MEASUREMENT THEORY</h3>
+                <p>
+                    Spacetime curvature quantified by the Kretschmann scalar (K):
+                    <br><br>
+                    <strong>K = R_{abcd} R^{abcd}</strong> (contraction of Riemann curvature tensor)
+                    <br><br>
+                    For a spherical mass M with core density ρ:
+                    <br><br>
+                    <strong>K ≈ 48G²M² / (c⁸r⁶)</strong>
+                    <br><br>
+                    Where r = radius derived from density. Higher M and ρ → stronger curvature.
+                </p>
+
+                <p class="warning">
+                    Curvature Ratio compares local K to Earth baseline (5.175×10⁻¹⁴⁰ m⁻⁴).
+                    <br>Ratio ≥ 1.0 required for CTC formation.
+                    <br>This requires post-nuclear densities: ρ &gt; 10⁵⁰ g/cm³.
+                </p>
+
+                <h3>DENSITY vs TOPOLOGY</h3>
+                <p>
+                    <strong>CRITICAL DISTINCTION:</strong>
+                    <br><br>
+                    • <strong>Curvature Ratio:</strong> Measures spacetime bending (how "steep" the gravity well is)
+                    <br>• <strong>Topology Factor:</strong> Measures spacetime twist (frame-dragging, rotation effects)
+                    <br><br>
+                    Curvature from this instrument tells you IF a CTC can form.
+                    <br>Topology Factor (0.1-1.0) tells you HOW twisted the resulting spacetime geometry is.
+                    <br><br>
+                    Think: Curvature = "Is the hill steep enough?" | Topology = "How spiral is the path?"
+                </p>
+
+                <h3>POST-NUCLEAR DENSITY REQUIREMENTS</h3>
+                <p class="danger">
+                    Known matter densities:
+                    <br>• Earth core: 12 g/cm³
+                    <br>• White dwarf: ~10⁶ g/cm³
+                    <br>• Neutron star: ~2×10¹⁴ g/cm³
+                    <br>• Nuclear saturation: ~3×10¹⁴ g/cm³
+                    <br>• <strong>CTC requirement: ~10⁵⁰ g/cm³</strong>
+                    <br>• Planck density (max theoretical): ~5×10⁹⁶ g/cm³
+                    <br><br>
+                    No known natural objects exist at 10⁵⁰ g/cm³. This is the realm of:
+                    <br>• Primordial black holes (quantum-scale)
+                    <br>• Artificial singularities (engineered)
+                    <br>• Quark-gluon plasma under extreme compression
+                    <br>• Hypothetical "strange quark matter" stars
+                    <br><br>
+                    Checkpoints must be engineered or involve exotic astrophysical objects.
+                </p>
+
+                <h3>SUPER-PLANCKIAN REGIME</h3>
+                <p style="font-size: 11px;">
+                    At densities &gt; 10⁹⁶ g/cm³, general relativity fails entirely.
+                    Quantum gravity theories (string theory, loop quantum gravity) predict:
+                    <br>• Spacetime discretization (Planck-length grid)
+                    <br>• Black hole horizon uncertainty
+                    <br>• Possible wormhole spontaneous formation
+                    <br><br>
+                    CTC formation at 10⁵⁰ g/cm³ is mid-way between nuclear and Planck densities,
+                    in a regime where semi-classical gravity still applies but exotic phenomena emerge.
+                </p>
+
+                <h3>TROUBLESHOOTING</h3>
+                <p style="font-size: 10px;">
+                    ERROR CODE 0x30: "INCOMPLETE STELLAR DATA" - Mass or density not provided.<br>
+                    ERROR CODE 0x31: "CALCULATION OVERFLOW" - Values too extreme, reduce inputs.<br>
+                    ERROR CODE 0x32: "INSUFFICIENT CURVATURE" - Ratio &lt; 1.0, seek denser object.<br>
+                    ERROR CODE 0x33: "POST-NUCLEAR DENSITY" - ρ &gt; 10¹⁴ g/cm³, beyond neutron star physics.<br>
+                    ERROR CODE 0x34: "SUPER-PLANCKIAN DENSITY" - ρ &gt; 10⁹⁶ g/cm³, quantum gravity regime.<br>
+                </p>
+            </div>
+
+            <div class="calculator-interface" id="curvature4Calc">
+                <h3 style="color: #00cc00; margin-bottom: 15px;">GRAVITY WARP SCANNER - DATA INPUT</h3>
+                
+                <div style="text-align: center; margin: 20px 0; padding: 15px; background: #000; border: 1px solid #00aa00;">
+                    <pre style="color: #00ff00; font-size: 11px;">
+[LASER GRID]══▶[DETECTOR ARRAY]
+     ▲              │
+     │              ▼
+[PULSAR REF]◀═[ANALYZER]
+                    </pre>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Central Object Mass (×10²⁴ kg):</label>
+                    <input type="text" id="curvature4Mass" placeholder="e.g., 5.97 or 6e+50" value="5.97">
+                    <div class="hint">Earth: 5.97 | Jupiter: 1898 | Sun: 1.989×10⁶ | Use scientific notation for large values</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Core Density (g/cm³):</label>
+                    <input type="text" id="curvature4Density" placeholder="e.g., 12 or 6e+50" value="12">
+                    <div class="hint">Earth: 12 | White dwarf: ~10⁶ | Neutron star: ~10¹⁴ | Target: ~10⁵⁰</div>
+                </div>
+
+                <button onclick="calculateCurvature()">EXECUTE MEASUREMENT</button>
+
+                <div class="result-display" id="curvature4Result">
+                    <div style="color: #00aa00;">Awaiting measurement execution...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final CTC Calculator -->
+        <div class="module locked" id="ctcFinal">
+            <div class="module-header">
+                <h2>FINAL: CTC CHRONOSTABILITY ANALYSIS</h2>
+                <span class="serial">Integrated System Assessment</span>
+            </div>
+            
+            <div style="padding: 20px;">
+                <p style="margin-bottom: 20px; color: #00aa00;">
+                    Once all four instruments have collected data, input the measured values here to determine
+                    CTC formation probability at this checkpoint.
+                </p>
+
+                <div class="calc-input-group">
+                    <label>Exotic Matter Mass (kg):</label>
+                    <input type="number" id="ctcExotic" step="0.001" value="1.0">
+                    <div class="hint">From Vacuum Energy Scanner | Minimum: 0.14kg | Human-scale: ≥1.0kg</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Proper Time Duration (s):</label>
+                    <input type="text" id="ctcTime" placeholder="Use scientific notation" value="1.0">
+                    <div class="hint">From Time Warp Chronometer | Target: &lt;10⁻⁸⁰s | Format: 7.0144e-84</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>System Entropy (nat):</label>
+                    <input type="number" id="ctcEntropy" step="0.001" value="5.0">
+                    <div class="hint">From Decoherence Detector | Target: &lt;5.0 nat | Excellent: &lt;2.0 nat</div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>Spacetime Topology Factor (0.1-1.0):</label>
+                    <input type="number" id="ctcTopology" step="0.01" min="0.1" max="1.0" value="0.5">
+                    <div class="hint">Frame-dragging measurement | Higher = more twisted | Independent of curvature ratio</div>
+                </div>
+
+                <button onclick="calculateCTC()" style="font-size: 16px; padding: 15px 30px;">
+                    CALCULATE CHRONOSTABILITY
+                </button>
+
+                <div class="result-display" id="ctcResult" style="min-height: 100px;">
+                    <div style="color: #00aa00;">Awaiting final calculation...</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
         // Constants
-        const C = 299792458; // m/s
-        const G = 6.67430e-11; // m³ kg⁻¹ s⁻²
+        const C = 299792458;
+        const G = 6.67430e-11;
+        const PLANCK_TIME = 5.391247e-44;
+        const PLANCK_DENSITY = 5.155e96;
+        const NUCLEAR_DENSITY = 2.3e14;
 
-        // Toggle folder visibility
-        function toggleFolder(id) {
-            const folder = document.getElementById(id);
-            const header = folder.previousElementSibling;
-            if (folder.style.display === 'block') {
-                folder.style.display = 'none';
-                header.innerHTML = header.innerHTML.replace('−', '+');
+        // State tracking
+        let modulesUnlocked = 0;
+        let instrumentsUnlocked = 0;
+
+        // Boot sequence
+        let bootMessages = [
+            '> INITIALIZING TERRANOVA CTC QUANTUM DRIVE FIELD KIT v3.2.1',
+            '> Firmware Build: 2027.08.14-REV3',
+            '> Serial: TN-CTCQD-00742-GS',
+            '',
+            '> Checking hardware integrity...',
+            '> ODS alloy hull: NOMINAL',
+            '> Quantum substrate: NOMINAL',
+            '> Supercomputer link: STANDBY',
+            '> Cryogenic systems: STANDBY',
+            '',
+            '> Loading operator safety protocols...',
+            '> Light-Drive prohibition: ACTIVE',
+            '> Antimatter containment: SEALED',
+            '> Causality preservation: ENABLED',
+            '',
+            '> WARNING: 47 casualties logged from Light-Drive program',
+            '> CTC method adopted per Resolution 2031-LD-BAN',
+            '',
+            '> System ready. Awaiting operator initialization.',
+            '',
+            '> Press ENTER to continue...'
+        ];
+
+        let bootIndex = 0;
+        function bootSequence() {
+            const bootText = document.getElementById('bootText');
+            if (bootIndex < bootMessages.length) {
+                bootText.innerHTML += bootMessages[bootIndex] + '<br>';
+                bootIndex++;
+                setTimeout(bootSequence, bootIndex < 5 ? 200 : 400);
             } else {
-                folder.style.display = 'block';
-                header.innerHTML = header.innerHTML.replace('+', '−');
+                bootText.innerHTML += '<span class="blink" style="font-size: 16px; color: #00ff00;">[PRESS ENTER TO INITIALIZE]</span>';
+                document.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('bootSequence').style.display = 'none';
+                        document.getElementById('mainInterface').style.display = 'block';
+                    }
+                });
             }
         }
 
-                // Exotic Matter Calculator (Validated)
-        function calculateExotic() {
-            const pressure = parseFloat(document.getElementById('airPressure').value);
-            const gravity = parseFloat(document.getElementById('localGravity1').value);
-            const resultDiv = document.getElementById('exoticResult');
-            
-            if(!pressure || !gravity) {
-                resultDiv.innerHTML = "⚠️ Missing data! Complete all fields";
-                resultDiv.className = "result status-warning";
-                return;
-            }
-
-            // Improved calculation with pressure-depth relationship
-            const exoticMass = (Math.log(pressure/101.3) * 0.5) * (9.81/gravity) * 1.2;
-            let status = "status-normal";
-            let message = `Exotic Mass: ${exoticMass.toFixed(3)} kg`;
-            
-            if(exoticMass < 0.1 || exoticMass > 5.0) {
-                status = "status-alert";
-                message += " ⚠️ EXOTIC FLUX ANOMALY";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
-        }
-
-        // Proper Time Calculator (Relativistic)
-        function calculateTime() {
-            const type = document.getElementById('dilationType').value;
-            const velocityInput = parseFloat(document.getElementById('relativeVelocity').value) || 0;
-            const velocity = velocityInput * 1000; // Convert km/s to m/s
-            let gravitationalFactor = 1;
-
-            // Gravitational time dilation
-            if(type === 'planetSurface') {
-                const g = parseFloat(document.getElementById('localGravity').value);
-                if(g) {
-                    const h = 2; // Measurement height (m)
-                    gravitationalFactor = Math.sqrt(1 - (2 * g * h)/(C**2));
-                }
-            } else {
-                const M = parseFloat(document.getElementById('centralMass').value) * 1e24;
-                const r = parseFloat(document.getElementById('orbitalRadius').value) * 1000;
-                if(M && r) {
-                    gravitationalFactor = Math.sqrt(1 - (2 * G * M)/(r * C**2));
-                }
-            }
-
-            // Velocity time dilation
-            const velocityFactor = Math.sqrt(1 - (velocity**2)/(C**2));
-            const dilationFactor = 1 / (gravitationalFactor * velocityFactor);
-            const properTime = (dilationFactor - 1) * 1000; // ms offset
-
-            // Update results
-            const resultDiv = document.getElementById('timeResult');
-            let status = "status-normal";
-            let message = `Time Dilation: ${dilationFactor.toExponential(8)}<br>`;
-            message += `Proper Time: ${properTime.toFixed(6)} s`;
-
-            if(dilationFactor > 1.0000001) { // 0.1 ppm threshold
-                status = "status-alert";
-                message += "<br>⚠️ RELATIVISTIC EFFECTS DETECTED";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
-        }
-
-        // Entropy Calculator (Quantum Corrected)
-        function calculateEntropy() {
-            const temp = parseFloat(document.getElementById('ambientTemp').value);
-            const field = parseFloat(document.getElementById('magneticField').value);
-            const resultDiv = document.getElementById('entropyResult');
-            
-            if(!temp || !field || temp <= 0 || field <= 0) {
-                resultDiv.innerHTML = "⚠️ Invalid quantum conditions";
-                resultDiv.className = "result status-warning";
-                return;
-            }
-
-            // Quantum-safe entropy calculation
-            const entropy = Math.abs(Math.log(temp/293) * (1/field));
-            let status = "status-normal";
-            let message = `System Entropy: ${entropy.toFixed(2)} nat`;
-            
-            if(entropy > 6) { // Landauer's limit threshold
-                status = "status-alert";
-                message += " ⚠️ COHERENCE COLLAPSE";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
-        }
-
-        // Spacetime Curvature Calculator (Kretschmann-based)
-        function calculateTopology() {
-            const mass = parseFloat(document.getElementById('planetMass').value) * 1e24;
-            const density = parseFloat(document.getElementById('coreDensity').value) * 1000; // kg/m³
-            const resultDiv = document.getElementById('topologyResult');
-            
-            if(!mass || !density) {
-                resultDiv.innerHTML = "⚠️ Incomplete stellar data";
-                resultDiv.className = "result status-warning";
-                return;
-            }
-
-            // Kretschmann scalar calculation
-            const radius = Math.cbrt((3 * mass) / (4 * Math.PI * density));
-            const kretschmann = (48 * G**2 * mass**2) / (C**8 * radius**6);
-            const earthKretschmann = 1.27e-32; // m⁻⁴
-            const topology = kretschmann / earthKretschmann;
-
-            let status = "status-normal";
-            let message = `Curvature Index: ${topology.toExponential(2)}`;
-
-            if(topology > 1e6) { // Neutron star threshold
-                status = "status-alert";
-                message += " ⚠️ EXTREME CURVATURE";
-            }
-
-            resultDiv.innerHTML = message;
-            resultDiv.className = `result ${status}`;
-        }
-
-        // Initialize folders
         window.onload = function() {
-            document.querySelectorAll('.folder-content').forEach(folder => {
-                folder.style.display = 'none';
-            });
+            setTimeout(bootSequence, 500);
         };
+
+        // Toggle sections
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            const header = section.previousElementSibling;
+            if (section.classList.contains('open')) {
+                section.classList.remove('open');
+                header.classList.remove('open');
+            } else {
+                section.classList.add('open');
+                header.classList.add('open');
+            }
+        }
+
+        // Unlock module
+        function unlockModule(moduleNum) {
+            const module = document.getElementById('module' + moduleNum);
+            module.classList.remove('locked');
+            modulesUnlocked++;
+            document.getElementById('statusModules').textContent = modulesUnlocked + '/4';
+            
+            if (modulesUnlocked === 4) {
+                unlockAllInstruments();
+            }
+        }
+
+        function unlockAllInstruments() {
+            document.getElementById('statusPower').textContent = 'ONLINE';
+            document.getElementById('statusPower').className = 'status-ok';
+            document.getElementById('statusQuantum').textContent = 'INITIALIZED';
+            document.getElementById('statusQuantum').className = 'status-ok';
+            document.getElementById('statusComputer').textContent = 'LINKED';
+            document.getElementById('statusComputer').className = 'status-ok';
+            
+            for (let i = 1; i <= 4; i++) {
+                const inst = document.getElementById('instrument' + i);
+                inst.classList.remove('locked');
+                const calc = document.getElementById(i === 1 ? 'exotic1Calc' : i === 2 ? 'time2Calc' : i === 3 ? 'entropy3Calc' : 'curvature4Calc');
+                calc.classList.add('active');
+            }
+            
+            document.getElementById('ctcFinal').classList.remove('locked');
+        }
+
+        // Calibration Puzzles
+        function checkPowerCalibration() {
+            const freq = parseFloat(document.getElementById('powerFreq').value);
+            const result = document.getElementById('powerResult');
+            
+            if (Math.abs(freq - 50.00) < 0.01) {
+                result.innerHTML = '<span style="color: #00ff00;">✓ SYNCHRONIZATION SUCCESSFUL</span><br>Power grid stable. Module 1 unlocked.';
+                unlockModule(1);
+                setTimeout(() => {
+                    document.getElementById('module2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 1000);
+            } else {
+                result.innerHTML = '<span style="color: #ff6666;">✗ SYNCHRONIZATION FAILED</span><br>Frequency mismatch: ' + Math.abs(freq - 50).toFixed(2) + ' Hz deviation. Maximum tolerance: ±0.1 Hz.';
+            }
+        }
+
+        function checkQuantumInit() {
+            const sig = document.getElementById('quantumSig').value.toUpperCase();
+            const result = document.getElementById('quantumResult');
+            
+            // 5 in hex = 0x5, padded to 4 digits = 0005
+            if (sig === 'QBIT-0005') {
+                result.innerHTML = '<span style="color: #00ff00;">✓ SIGNATURE VERIFIED</span><br>Wavefunction collapsed to definite state. Module 2 unlocked.';
+                unlockModule(2);
+                setTimeout(() => {
+                    document.getElementById('module3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 1000);
+            } else {
+                result.innerHTML = '<span style="color: #ff6666;">✗ SIGNATURE INVALID</span><br>Expected format: QBIT-XXXX where XXXX is 4-digit hex. Hint: Convert entropy baseline (5.0) to integer (5), then to hex, pad with zeros.';
+            }
+        }
+
+        function checkSafetyAck() {
+            const casualties = parseInt(document.getElementById('casualties').value);
+            const result = document.getElementById('safetyResult');
+            
+            if (casualties === 47) {
+                result.innerHTML = '<span style="color: #00ff00;">✓ ACKNOWLEDGED</span><br>Light-Drive casualties: 47 souls. Their sacrifice guides our safer path. Module 3 unlocked.';
+                result.style.color = '#00ff00';
+                unlockModule(3);
+                setTimeout(() => {
+                    document.getElementById('module4').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 1000);
+            } else {
+                result.innerHTML = '<span style="color: #ff6666;">✗ INCORRECT</span><br>Refer to Memorial Section. This number honors those lost.';
+            }
+        }
+
+        function checkAuthKey() {
+            const key = parseInt(document.getElementById('authKey').value);
+            const result = document.getElementById('authResult');
+            
+            // (50.00 * 100) + 47 + (5.0 * 10) = 5000 + 47 + 50 = 5097
+            if (key === 5097) {
+                result.innerHTML = '<span style="color: #00ff00;">✓ AUTHENTICATION SUCCESSFUL</span><br>Supercomputer handshake established. All instruments now online.';
+                unlockModule(4);
+                setTimeout(() => {
+                    document.getElementById('instrument1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 1000);
+            } else {
+                result.innerHTML = '<span style="color: #ff6666;">✗ AUTHENTICATION FAILED</span><br>Key mismatch. Calculate: (50.00 × 100) + 47 + (5.0 × 10) = ?';
+            }
+        }
+
+        // Safe parsing
+        function safeParseFloat(value, defaultValue = 0) {
+            if (value === null || value === undefined || value === '') return defaultValue;
+            const parsed = parseFloat(value);
+            if (isNaN(parsed) || !isFinite(parsed)) return defaultValue;
+            return parsed;
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+
+        // Exotic Matter Calculator
+        function calculateExoticMatter() {
+            const resultDiv = document.getElementById('exotic1Result');
+            
+            try {
+                const pressure = safeParseFloat(document.getElementById('exotic1Pressure').value);
+                const gravity = safeParseFloat(document.getElementById('exotic1Gravity').value, 9.81);
+                
+                if (pressure < 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Pressure cannot be negative';
+                    return;
+                }
+                
+                if (gravity <= 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Gravity must be positive (zero-g not supported)';
+                    return;
+                }
+                
+                const exoticMass = (pressure - 109.4) * (9.81 / gravity) * 0.088;
+                const clampedMass = clamp(exoticMass, -10000, 10000);
+                
+                let className = 'result-display';
+                let message = '<strong>MEASUREMENT COMPLETE</strong><br><br>';
+                message += '<div style="font-size: 18px; margin: 10px 0;">Exotic Mass: ' + clampedMass.toFixed(3) + ' kg</div>';
+                
+                if (clampedMass < -1000) {
+                    className += ' alert';
+                    message += '<div style="color: #ff6666;">⚠️ EXTREME NEGATIVE ENERGY DETECTED</div>';
+                } else if (clampedMass < 0) {
+                    className += ' warning';
+                    message += '<div style="color: #ffaa00;">⚠️ EXOTIC FLUX ANOMALY (negative mass-energy)</div>';
+                } else if (clampedMass < 0.14) {
+                    className += ' alert';
+                    message += '<div style="color: #ff6666;">⚠️ INSUFFICIENT FOR CTC (Min 0.14kg)</div>';
+                } else if (clampedMass < 1.0) {
+                    className += ' warning';
+                    message += '<div style="color: #ffaa00;">⚠️ BELOW HUMAN-SCALE THRESHOLD (1kg)</div>';
+                } else {
+                    message += '<div style="color: #00ff00;">✓ SUFFICIENT FOR CTC FORMATION</div>';
+                }
+                
+                resultDiv.className = className;
+                resultDiv.innerHTML = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result-display alert';
+                resultDiv.innerHTML = '<strong>⚠️ CALCULATION ERROR:</strong><br>' + error.message;
+            }
+        }
+
+        // Proper Time Calculator
+        function calculateProperTime() {
+            const resultDiv = document.getElementById('time2Result');
+            
+            try {
+                const mode = document.getElementById('time2Mode').value;
+                
+                if (mode === 'surface') {
+                    resultDiv.className = 'result-display warning';
+                    resultDiv.innerHTML = '<strong>⚠️ SURFACE MEASUREMENTS INVALID</strong><br>Seismic interference and atmospheric turbulence prevent accurate readings.<br><br>Switch to Orbital Measurement mode.';
+                    return;
+                }
+                
+                const altitude = safeParseFloat(document.getElementById('time2Altitude').value, 12);
+                const velocityInput = safeParseFloat(document.getElementById('time2Velocity').value, 0);
+                
+                if (altitude < 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Altitude cannot be negative';
+                    return;
+                }
+                
+                const velocity = Math.min(velocityInput * 1000, C * 0.9999);
+                
+                if (velocityInput * 1000 >= C) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Velocity exceeds speed of light<br>Relativistic calculations invalid';
+                    return;
+                }
+                
+                const g = 9.81;
+                const gravitationalDilation = 1 + (g * altitude) / (C * C);
+                const velocityDilation = 1 / Math.sqrt(1 - (velocity * velocity) / (C * C));
+                const totalDilation = gravitationalDilation * velocityDilation;
+                const properTimeDelta = (totalDilation - 1) * 1e-9;
+                
+                let className = 'result-display';
+                let message = '<strong>MEASUREMENT COMPLETE</strong><br><br>';
+                message += '<div>Time Dilation Factor: ' + totalDilation.toExponential(4) + '</div>';
+                message += '<div style="font-size: 18px; margin: 10px 0;">Proper Time Δ: ' + properTimeDelta.toExponential(4) + ' s</div>';
+                
+                if (Math.abs(properTimeDelta) < PLANCK_TIME && properTimeDelta > 0) {
+                    message += '<div style="color: #ffaa00; font-size: 11px; font-style: italic;">Note: Trans-Planckian regime (&lt; 10⁻⁴³ s) - Normal for CTC operations</div>';
+                }
+                
+                if (Math.abs(totalDilation - 1) > 1e-6) {
+                    className += ' warning';
+                    message += '<div style="color: #ffaa00;">⚠️ SIGNIFICANT RELATIVISTIC EFFECTS DETECTED</div>';
+                }
+                
+                resultDiv.className = className;
+                resultDiv.innerHTML = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result-display alert';
+                resultDiv.innerHTML = '<strong>⚠️ CALCULATION ERROR:</strong><br>' + error.message;
+            }
+        }
+
+        // Entropy Calculator
+        function calculateEntropy() {
+            const resultDiv = document.getElementById('entropy3Result');
+            
+            try {
+                const temp = safeParseFloat(document.getElementById('entropy3Temp').value, 293);
+                const field = safeParseFloat(document.getElementById('entropy3Field').value, 1.0);
+                
+                if (temp <= 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Temperature must be positive<br>(Absolute zero = 0K is theoretical limit)';
+                    return;
+                }
+                
+                if (field <= 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Magnetic field must be positive';
+                    return;
+                }
+                
+                const clampedTemp = clamp(temp, 1e-10, 1e10);
+                const clampedField = clamp(field, 1e-10, 1e15);
+                
+                const k = 20;
+                const entropy = k * Math.log(clampedTemp) / Math.log(clampedField + 1);
+                
+                if (!isFinite(entropy)) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ CALCULATION ERROR</strong><br>Entropy undefined at extreme values';
+                    return;
+                }
+                
+                let className = 'result-display';
+                let message = '<strong>MEASUREMENT COMPLETE</strong><br><br>';
+                message += '<div style="font-size: 18px; margin: 10px 0;">System Entropy: ' + entropy.toFixed(3) + ' nat</div>';
+                
+                let warnings = [];
+                if (temp < 1e-6) warnings.push('SUB-MICROKELVIN REGIME (T &lt; 1μK)');
+                if (field > 1e12) warnings.push('BEYOND MAGNETAR FIELDS (B &gt; 10¹² T)');
+                
+                if (entropy > 10.0) {
+                    className += ' alert';
+                    message += '<div style="color: #ff6666;">⚠️ SEVERE QUANTUM DECOHERENCE</div>';
+                } else if (entropy > 5.0) {
+                    className += ' warning';
+                    message += '<div style="color: #ffaa00;">⚠️ QUANTUM DECOHERENCE DETECTED</div>';
+                } else if (entropy < 2.0) {
+                    message += '<div style="color: #00ff00;">✓ EXCELLENT COHERENCE</div>';
+                }
+                
+                if (warnings.length > 0) {
+                    message += '<div style="color: #ffaa00; font-size: 11px; margin-top: 10px; font-style: italic;">' + warnings.join('<br>') + '</div>';
+                }
+                
+                resultDiv.className = className;
+                resultDiv.innerHTML = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result-display alert';
+                resultDiv.innerHTML = '<strong>⚠️ CALCULATION ERROR:</strong><br>' + error.message;
+            }
+        }
+
+        // Curvature Calculator
+        function calculateCurvature() {
+            const resultDiv = document.getElementById('curvature4Result');
+            
+            try {
+                const massInput = document.getElementById('curvature4Mass').value;
+                const densityInput = document.getElementById('curvature4Density').value;
+                
+                const massValue = safeParseFloat(massInput);
+                const densityValue = safeParseFloat(densityInput);
+                
+                if (massValue <= 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Mass must be positive';
+                    return;
+                }
+                
+                if (densityValue <= 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ ERROR</strong><br>Density must be positive';
+                    return;
+                }
+                
+                const mass = massValue * 1e24;
+                const density = densityValue;
+                
+                const earthMass = 5.97e24;
+                const earthDensity = 12;
+                const earthCurvature = 5.175e-140;
+                
+                const densityRatio = density / earthDensity;
+                const curvatureRatio = (mass / earthMass) * Math.pow(densityRatio, 2) * earthCurvature;
+                
+                if (!isFinite(curvatureRatio)) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ CALCULATION OVERFLOW</strong><br>Values too extreme - reduce mass or density';
+                    return;
+                }
+                
+                let className = 'result-display';
+                let message = '<strong>MEASUREMENT COMPLETE</strong><br><br>';
+                message += '<div style="font-size: 18px; margin: 10px 0;">Curvature Ratio: ' + curvatureRatio.toExponential(3) + '</div>';
+                
+                if (curvatureRatio >= 1.0) {
+                    message += '<div style="color: #00ff00; font-size: 16px;">Status: 🟢 NOMINAL</div>';
+                    message += '<div style="color: #00ff00;">✓ Sufficient curvature for CTC formation</div>';
+                } else {
+                    className += ' alert';
+                    message += '<div style="color: #ff6666; font-size: 16px;">Status: 🔴 INSUFFICIENT</div>';
+                    message += '<div style="color: #ff6666;">Requires density ~10⁵⁰ g/cm³ for stability</div>';
+                }
+                
+                let warnings = [];
+                if (density > NUCLEAR_DENSITY && density <= PLANCK_DENSITY) {
+                    warnings.push('POST-NUCLEAR DENSITY (&gt; 10¹⁴ g/cm³)');
+                }
+                if (density > PLANCK_DENSITY) {
+                    warnings.push('SUPER-PLANCKIAN DENSITY (&gt; 10⁹⁶ g/cm³)');
+                }
+                
+                if (warnings.length > 0) {
+                    message += '<div style="color: #ffaa00; font-size: 11px; margin-top: 10px; font-style: italic;">' + warnings.join('<br>') + '</div>';
+                }
+                
+                resultDiv.className = className;
+                resultDiv.innerHTML = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result-display alert';
+                resultDiv.innerHTML = '<strong>⚠️ CALCULATION ERROR:</strong><br>' + error.message;
+            }
+        }
+
+        // Final CTC Calculator
+        function calculateCTC() {
+            const resultDiv = document.getElementById('ctcResult');
+            
+            try {
+                const exoticMass = safeParseFloat(document.getElementById('ctcExotic').value);
+                const properTimeStr = document.getElementById('ctcTime').value;
+                const properTime = safeParseFloat(properTimeStr);
+                const entropy = safeParseFloat(document.getElementById('ctcEntropy').value);
+                const topology = safeParseFloat(document.getElementById('ctcTopology').value);
+                
+                // Validation
+                const errors = [];
+                if (exoticMass < 0) errors.push('Exotic matter mass cannot be negative');
+                if (properTime < 0) errors.push('Proper time cannot be negative');
+                if (entropy < 0) errors.push('Entropy cannot be negative');
+                if (topology < 0.1 || topology > 1.0) errors.push('Topology factor must be between 0.1 and 1.0');
+                
+                if (errors.length > 0) {
+                    resultDiv.className = 'result-display alert';
+                    resultDiv.innerHTML = '<strong>⚠️ INPUT ERRORS:</strong><br>' + errors.join('<br>');
+                    return;
+                }
+                
+                if (properTime === 0) {
+                    resultDiv.className = 'result-display warning';
+                    resultDiv.innerHTML = '<strong>⚠️ PROPER TIME = 0</strong><br>Instantaneous traversal is theoretical limit<br>Use extremely small values instead (e.g., 1e-100)';
+                    return;
+                }
+                
+                // Calculate stability
+                let stability = 0;
+                let warnings = [];
+                
+                if (exoticMass >= 0.14 && properTime < 1e-70 && entropy < 10.0 && topology >= 0.1) {
+                    stability = 50;
+                    
+                    if (exoticMass >= 1.0) {
+                        stability += 25;
+                    } else {
+                        stability += 25 * (exoticMass / 1.0);
+                        warnings.push('⚠️ EXOTIC MASS BELOW HUMAN-SCALE (Min 1kg)');
+                    }
+                    
+                    if (properTime < 1e-83) {
+                        stability += 25;
+                    } else if (properTime < 1e-80) {
+                        const timeFactor = 1e-80 / properTime;
+                        stability += 25 * Math.min(timeFactor, 1);
+                    } else {
+                        warnings.push('⚠️ PROPER TIME TOO LONG (Target &lt; 10⁻⁸³ s)');
+                    }
+                    
+                    if (entropy > 5.0) {
+                        stability *= clamp(5.0 / entropy, 0, 1);
+                        warnings.push('⚠️ QUANTUM DECOHERENCE DETECTED');
+                    }
+                } else {
+                    if (exoticMass < 0.14) warnings.push('⚠️ EXOTIC MASS INSUFFICIENT (Min 0.14kg)');
+                    if (properTime > 1e-70) warnings.push('⚠️ PROPER TIME EXCEEDS STABILITY THRESHOLD');
+                    if (entropy > 10.0) warnings.push('⚠️ ENTROPY TOO HIGH (catastrophic decoherence)');
+                }
+                
+                stability = clamp(stability, 0, 100);
+                
+                let className = 'result-display';
+                if (stability >= 95) className += '';
+                else if (stability >= 50) className += ' warning';
+                else className += ' alert';
+                
+                let message = '<div style="text-align: center; font-size: 24px; margin: 20px 0; font-weight: bold;">';
+                message += 'CHRONOSTABILITY PROBABILITY: ' + stability.toFixed(2) + '%';
+                message += '</div>';
+                
+                if (warnings.length > 0) {
+                    message += '<div style="margin: 15px 0; padding: 10px; border: 1px solid #ffaa00; background: #221100;">';
+                    message += warnings.join('<br>');
+                    message += '</div>';
+                }
+                
+                if (stability >= 100) {
+                    message += '<div style="color: #00ff00; font-size: 16px; margin-top: 15px;">';
+                    message += '✓ ALL PARAMETERS OPTIMAL<br>✓ CTC FORMATION STABLE<br><br>';
+                    message += '<div style="font-size: 12px;">CHECKPOINT VIABLE FOR PITON EXCHANGE</div>';
+                    message += '</div>';
+                } else if (stability >= 95) {
+                    message += '<div style="color: #00ff00; margin-top: 15px;">';
+                    message += '✓ CTC FORMATION VIABLE<br><em>Micro-adjustments recommended for optimal stability</em>';
+                    message += '</div>';
+                } else if (stability < 50) {
+                    message += '<div style="color: #ff6666; font-size: 14px; margin-top: 15px;">';
+                    message += '✗ CTC FORMATION PROBABILITY TOO LOW<br>✗ DO NOT ATTEMPT TRAVERSAL<br><br>';
+                    message += '<div style="font-size: 12px;">SEEK ALTERNATIVE CHECKPOINT</div>';
+                    message += '</div>';
+                }
+                
+                resultDiv.className = className;
+                resultDiv.innerHTML = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result-display alert';
+                resultDiv.innerHTML = '<strong>⚠️ CRITICAL ERROR:</strong><br>' + error.message;
+            }
+        }
     </script>
 </body>
 </html>
