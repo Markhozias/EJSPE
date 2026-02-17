@@ -1454,7 +1454,7 @@
                 const clampedField = clamp(field, 1e-10, 1e15);
                 
                 const k = 20;
-                const entropy = k * Math.log(clampedTemp) / Math.log(clampedField + 1);
+                const entropy = k * Math.abs(Math.log(temp)) / Math.log(field + 1);
                 
                 if (!isFinite(entropy)) {
                     resultDiv.className = 'result-display alert';
